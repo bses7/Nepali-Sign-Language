@@ -1,0 +1,74 @@
+paths:
+  raw_data: "data"
+  output_dir: "training_dataset"
+  sequences_dir: "training_dataset/sequences"
+  vowel_root: "data/NSL_Vowel"
+  cons_part1: "data/NSL_Consonant_Part_1"
+  cons_part3: "data/NSL_Consonant_Part_3"
+  annotations: "data/annotations"
+
+mediapipe:
+  static_image_mode: false
+  model_complexity: 2
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  use_pose: true
+  use_hands: true
+  use_face: false
+
+processing:
+  fps_target: 60 # Keep original 60fps
+  frame_skip: 1 # Set to 2 if you want to downsample to 30fps
+  normalize: true # Wrist-centric normalization
+  cropped_identifiers: ["Cropped"]
+  label_map:
+    "A": "अ"
+    "AA": "आ"
+    "I": "इ"
+    "II": "ई"
+    "U": "उ"
+    "UU": "ऊ"
+    "RI": "ऋ"
+    "E": "ए"
+    "AI": "ऐ"
+    "O": "ओ"
+    "AU": "औ"
+    "AM": "अं"
+    "AH": "अः"
+  consonant_label_map:
+    "KA": "क"
+    "KHA": "ख"
+    "GA": "ग"
+    "GHA": "घ"
+    "NGA": "ङ"
+    "CHA": "च"
+    "CHHA": "छ"
+    "JA": "ज"
+    "JHA": "झ"
+    "YAN": "ञ"
+    "TA": "ट"
+    "THA": "ठ"
+    "DA": "ड"
+    "DHA": "ढ"
+    "NA": "ण"
+    "TAA": "त"
+    "THAA": "थ"
+    "DAA": "द"
+    "DHAA": "ध"
+    "NAA": "न"
+    "PA": "प"
+    "PHA": "फ"
+    "BA": "ब"
+    "BHA": "भ"
+    "MA": "म"
+    "YA": "य"
+    "RA": "र"
+    "LA": "ल"
+    "WA": "व"
+    "T_SHA": "श"
+    "M_SHA": "ष"
+    "D_SHA": "स"
+    "HA": "ह"
+    "KSHA": "क्ष"
+    "TRA": "त्र"
+    "GYA": "ज्ञ"

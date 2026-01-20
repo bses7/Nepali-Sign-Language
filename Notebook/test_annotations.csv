@@ -1,0 +1,14 @@
+label,start_frame,end_frame,is_cropped,video_name,folder_name
+A,6,60,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+AA,82,134,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+I,182,210,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+II,267,300,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+U,360,392,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+UU,427,466,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+RI,491,540,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+E,571,606,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+AI,645,678,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+O,715,748,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+AU,800,813,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+AM,856,897,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
+AH,962,990,True,S3_NSL_Vowel_Prepared_Camera_all.MOV,S3_NSL_Vowel_Prepared
