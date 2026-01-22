@@ -5,7 +5,7 @@ from pathlib import Path
 import argparse
 
 # --- CONSTANTS ---
-VOWELS = ["A", "AA", "I", "II", "U", "UU", "RI", "E", "AI", "O", "AU", "AM", "AH"]
+VOWELS = ["A", "AA", "I", "II", "U", "UU", "RE", "E", "AI", "O", "AU", "AM", "AH"]
 CONSONANTS = ["KA", "KHA", "GA", "GHA", "NGA",
     "CHA", "CHHA", "JA", "JHA", "YAN",
     "TA", "THA", "DA", "DHA", "NA",

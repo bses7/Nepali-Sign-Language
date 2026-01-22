@@ -5,6 +5,7 @@ from pathlib import Path
 from src.databuilder.single_builder import SingleBuilder
 from src.databuilder.multi_builder import MultiBuilder
 from src.data_preprocessing.tokenizer import NSLTokenizer
+from src.training.train_engine import train_model
 
 def main():
     parser = argparse.ArgumentParser(description="NSL Fingerspelling Pipeline")
@@ -19,7 +20,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.stage in ["build", "train"]:
+    if args.stage in ["build"]:
         if not args.data or not args.type:
             parser.error(f"--stage {args.stage} requires both --data and --type")
 
@@ -41,6 +42,24 @@ def main():
             csv_path = Path(config['paths']['output_dir']) / f"{args.data}_{args.type}_metadata.csv"
             pd.DataFrame(metadata).to_csv(csv_path, index=False, encoding='utf-8-sig')
             print(f"Build complete. Metadata saved to {csv_path}")
+    
+    elif args.stage == "train":
+        print(f"🎬 Initializing Training Phase...")
+        output_dir = Path(config['paths']['output_dir'])
+        master_csv = output_dir / "master_metadata.csv"
+        
+        if not master_csv.exists():
+            print("📦 Master metadata not found. Consolidating all CSVs...")
+            csv_files = list(output_dir.glob("*_metadata.csv"))
+            if not csv_files:
+                print("❌ Error: No metadata CSVs found to consolidate.")
+                return
+            df = pd.concat([pd.read_csv(f) for f in csv_files], ignore_index=True)
+            df.to_csv(master_csv, index=False, encoding='utf-8-sig')
+            print(f"✅ Consolidated {len(df)} samples.")
+
+        train_model(config)
+
 
 if __name__ == "__main__":
     main()

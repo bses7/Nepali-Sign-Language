@@ -7,7 +7,7 @@ sequences\consonant\S1_NSL_Consonant_Bright\DA.npz,ड,DA,99,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\DAA.npz,द,DAA,107,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\DHA.npz,ढ,DHA,147,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\DHAA.npz,ध,DHAA,84,False,S1,sign
-sequences\consonant\S1_NSL_Consonant_Bright\D.npz,Unknown,D,87,False,S1,sign
+sequences\consonant\S1_NSL_Consonant_Bright\D_SHA.npz,स,D_SHA,87,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\GA.npz,ग,GA,75,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\GHA.npz,घ,GHA,100,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\GYA.npz,ज्ञ,GYA,83,False,S1,sign
@@ -19,7 +19,7 @@ sequences\consonant\S1_NSL_Consonant_Bright\KHA.npz,ख,KHA,87,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\KSHA.npz,क्ष,KSHA,93,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\LA.npz,ल,LA,124,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\MA.npz,म,MA,87,False,S1,sign
-sequences\consonant\S1_NSL_Consonant_Bright\M.npz,Unknown,M,99,False,S1,sign
+sequences\consonant\S1_NSL_Consonant_Bright\M_SHA.npz,ष,M_SHA,99,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\NA.npz,ण,NA,99,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\NAA.npz,न,NAA,88,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\NGA.npz,ङ,NGA,118,False,S1,sign
@@ -31,7 +31,7 @@ sequences\consonant\S1_NSL_Consonant_Bright\TAA.npz,त,TAA,102,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\THA.npz,ठ,THA,127,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\THAA.npz,थ,THAA,93,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\TRA.npz,त्र,TRA,90,False,S1,sign
-sequences\consonant\S1_NSL_Consonant_Bright\T.npz,Unknown,T,95,False,S1,sign
+sequences\consonant\S1_NSL_Consonant_Bright\T_SHA.npz,श,T_SHA,95,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\WA.npz,व,WA,91,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\YA.npz,य,YA,75,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright\YAN.npz,ञ,YAN,74,False,S1,sign
@@ -43,7 +43,7 @@ sequences\consonant\S1_NSL_Consonant_Bright_Cropped\DA.npz,ड,DA,99,True,S1,sig
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\DAA.npz,द,DAA,107,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\DHA.npz,ढ,DHA,147,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\DHAA.npz,ध,DHAA,84,True,S1,sign
-sequences\consonant\S1_NSL_Consonant_Bright_Cropped\D.npz,Unknown,D,87,True,S1,sign
+sequences\consonant\S1_NSL_Consonant_Bright_Cropped\D_SHA.npz,स,D_SHA,87,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\GA.npz,ग,GA,75,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\GHA.npz,घ,GHA,100,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\GYA.npz,ज्ञ,GYA,83,True,S1,sign
@@ -55,7 +55,7 @@ sequences\consonant\S1_NSL_Consonant_Bright_Cropped\KHA.npz,ख,KHA,87,True,S1,s
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\KSHA.npz,क्ष,KSHA,93,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\LA.npz,ल,LA,124,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\MA.npz,म,MA,87,True,S1,sign
-sequences\consonant\S1_NSL_Consonant_Bright_Cropped\M.npz,Unknown,M,99,True,S1,sign
+sequences\consonant\S1_NSL_Consonant_Bright_Cropped\M_SHA.npz,ष,M_SHA,99,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\NA.npz,ण,NA,99,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\NAA.npz,न,NAA,88,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\NGA.npz,ङ,NGA,118,True,S1,sign
@@ -67,7 +67,7 @@ sequences\consonant\S1_NSL_Consonant_Bright_Cropped\TAA.npz,त,TAA,102,True,S1,
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\THA.npz,ठ,THA,127,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\THAA.npz,थ,THAA,93,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\TRA.npz,त्र,TRA,90,True,S1,sign
-sequences\consonant\S1_NSL_Consonant_Bright_Cropped\T.npz,Unknown,T,95,True,S1,sign
+sequences\consonant\S1_NSL_Consonant_Bright_Cropped\T_SHA.npz,श,T_SHA,95,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\WA.npz,व,WA,91,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\YA.npz,य,YA,75,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Bright_Cropped\YAN.npz,ञ,YAN,74,True,S1,sign
@@ -79,7 +79,7 @@ sequences\consonant\S1_NSL_Consonant_Dark\DA.npz,ड,DA,114,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\DAA.npz,द,DAA,118,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\DHA.npz,ढ,DHA,132,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\DHAA.npz,ध,DHAA,110,False,S1,sign
-sequences\consonant\S1_NSL_Consonant_Dark\D.npz,Unknown,D,90,False,S1,sign
+sequences\consonant\S1_NSL_Consonant_Dark\D_SHA.npz,स,D_SHA,90,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\GA.npz,ग,GA,75,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\GHA.npz,घ,GHA,98,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\GYA.npz,ज्ञ,GYA,95,False,S1,sign
@@ -91,7 +91,7 @@ sequences\consonant\S1_NSL_Consonant_Dark\KHA.npz,ख,KHA,130,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\KSHA.npz,क्ष,KSHA,84,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\LA.npz,ल,LA,94,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\MA.npz,म,MA,102,False,S1,sign
-sequences\consonant\S1_NSL_Consonant_Dark\M.npz,Unknown,M,136,False,S1,sign
+sequences\consonant\S1_NSL_Consonant_Dark\M_SHA.npz,ष,M_SHA,136,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\NA.npz,ण,NA,128,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\NAA.npz,न,NAA,120,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\NGA.npz,ङ,NGA,114,False,S1,sign
@@ -103,7 +103,7 @@ sequences\consonant\S1_NSL_Consonant_Dark\TAA.npz,त,TAA,130,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\THA.npz,ठ,THA,127,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\THAA.npz,थ,THAA,97,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\TRA.npz,त्र,TRA,110,False,S1,sign
-sequences\consonant\S1_NSL_Consonant_Dark\T.npz,Unknown,T,101,False,S1,sign
+sequences\consonant\S1_NSL_Consonant_Dark\T_SHA.npz,श,T_SHA,101,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\WA.npz,व,WA,116,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\YA.npz,य,YA,109,False,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark\YAN.npz,ञ,YAN,112,False,S1,sign
@@ -115,7 +115,7 @@ sequences\consonant\S1_NSL_Consonant_Dark_Cropped\DA.npz,ड,DA,114,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\DAA.npz,द,DAA,110,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\DHA.npz,ढ,DHA,132,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\DHAA.npz,ध,DHAA,118,True,S1,sign
-sequences\consonant\S1_NSL_Consonant_Dark_Cropped\D.npz,Unknown,D,90,True,S1,sign
+sequences\consonant\S1_NSL_Consonant_Dark_Cropped\D_SHA.npz,स,D_SHA,90,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\GA.npz,ग,GA,75,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\GHA.npz,घ,GHA,98,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\GYA.npz,ज्ञ,GYA,95,True,S1,sign
@@ -127,7 +127,7 @@ sequences\consonant\S1_NSL_Consonant_Dark_Cropped\KHA.npz,ख,KHA,130,True,S1,si
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\KSHA.npz,क्ष,KSHA,84,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\LA.npz,ल,LA,94,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\MA.npz,म,MA,102,True,S1,sign
-sequences\consonant\S1_NSL_Consonant_Dark_Cropped\M.npz,Unknown,M,136,True,S1,sign
+sequences\consonant\S1_NSL_Consonant_Dark_Cropped\M_SHA.npz,ष,M_SHA,136,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\NA.npz,ण,NA,128,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\NAA.npz,न,NAA,120,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\NGA.npz,ङ,NGA,114,True,S1,sign
@@ -139,7 +139,7 @@ sequences\consonant\S1_NSL_Consonant_Dark_Cropped\TAA.npz,त,TAA,130,True,S1,si
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\THA.npz,ठ,THA,127,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\THAA.npz,थ,THAA,97,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\TRA.npz,त्र,TRA,110,True,S1,sign
-sequences\consonant\S1_NSL_Consonant_Dark_Cropped\T.npz,Unknown,T,101,True,S1,sign
+sequences\consonant\S1_NSL_Consonant_Dark_Cropped\T_SHA.npz,श,T_SHA,101,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\WA.npz,व,WA,116,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\YA.npz,य,YA,109,True,S1,sign
 sequences\consonant\S1_NSL_Consonant_Dark_Cropped\YAN.npz,ञ,YAN,112,True,S1,sign
@@ -151,7 +151,7 @@ sequences\consonant\S2_NSL_Consonant_Bright\DA.npz,ड,DA,81,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\DAA.npz,द,DAA,87,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\DHA.npz,ढ,DHA,57,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\DHAA.npz,ध,DHAA,65,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Bright\D.npz,Unknown,D,82,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Bright\D_SHA.npz,स,D_SHA,82,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\GA.npz,ग,GA,60,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\GHA.npz,घ,GHA,106,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\GYA.npz,ज्ञ,GYA,105,False,S2,sign
@@ -163,7 +163,7 @@ sequences\consonant\S2_NSL_Consonant_Bright\KHA.npz,ख,KHA,96,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\KSHA.npz,क्ष,KSHA,105,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\LA.npz,ल,LA,82,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\MA.npz,म,MA,56,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Bright\M.npz,Unknown,M,72,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Bright\M_SHA.npz,ष,M_SHA,72,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\NA.npz,ण,NA,60,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\NAA.npz,न,NAA,66,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\NGA.npz,ङ,NGA,91,False,S2,sign
@@ -175,7 +175,7 @@ sequences\consonant\S2_NSL_Consonant_Bright\TAA.npz,त,TAA,72,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\THA.npz,ठ,THA,75,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\THAA.npz,थ,THAA,65,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\TRA.npz,त्र,TRA,99,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Bright\T.npz,Unknown,T,76,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Bright\T_SHA.npz,श,T_SHA,76,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\WA.npz,व,WA,88,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\YA.npz,य,YA,57,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright\YAN.npz,ञ,YAN,46,False,S2,sign
@@ -188,7 +188,7 @@ sequences\consonant\S2_NSL_Consonant_Bright_cropped\DA.npz,ड,DA,81,False,S2,si
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\DAA.npz,द,DAA,87,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\DHA.npz,ढ,DHA,57,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\DHAA.npz,ध,DHAA,65,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Bright_cropped\D.npz,Unknown,D,82,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Bright_cropped\D_SHA.npz,स,D_SHA,82,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\GA.npz,ग,GA,60,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\GHA.npz,घ,GHA,106,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\GYA.npz,ज्ञ,GYA,105,False,S2,sign
@@ -200,7 +200,7 @@ sequences\consonant\S2_NSL_Consonant_Bright_cropped\KHA.npz,ख,KHA,96,False,S2,
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\KSHA.npz,क्ष,KSHA,105,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\LA.npz,ल,LA,82,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\MA.npz,म,MA,56,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Bright_cropped\M.npz,Unknown,M,72,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Bright_cropped\M_SHA.npz,ष,M_SHA,72,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\NA.npz,ण,NA,60,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\NAA.npz,न,NAA,66,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\NGA.npz,ङ,NGA,91,False,S2,sign
@@ -212,7 +212,7 @@ sequences\consonant\S2_NSL_Consonant_Bright_cropped\TAA.npz,त,TAA,72,False,S2,
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\THA.npz,ठ,THA,75,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\THAA.npz,थ,THAA,65,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\TRA.npz,त्र,TRA,99,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Bright_cropped\T.npz,Unknown,T,76,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Bright_cropped\T_SHA.npz,श,T_SHA,76,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\WA.npz,व,WA,88,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Bright_cropped\YAN.npz,ञ,YAN,46,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\BA.npz,ब,BA,66,False,S2,sign
@@ -223,7 +223,7 @@ sequences\consonant\S2_NSL_Consonant_Dark\DA.npz,ड,DA,158,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\DAA.npz,द,DAA,103,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\DHA.npz,ढ,DHA,118,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\DHAA.npz,ध,DHAA,118,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Dark\D.npz,Unknown,D,73,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Dark\D_SHA.npz,स,D_SHA,73,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\GA.npz,ग,GA,113,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\GHA.npz,घ,GHA,132,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\GYA.npz,ज्ञ,GYA,123,False,S2,sign
@@ -235,7 +235,7 @@ sequences\consonant\S2_NSL_Consonant_Dark\KHA.npz,ख,KHA,79,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\KSHA.npz,क्ष,KSHA,76,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\LA.npz,ल,LA,136,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\MA.npz,म,MA,82,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Dark\M.npz,Unknown,M,92,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Dark\M_SHA.npz,ष,M_SHA,92,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\NA.npz,ण,NA,122,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\NAA.npz,न,NAA,110,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\NGA.npz,ङ,NGA,70,False,S2,sign
@@ -247,7 +247,7 @@ sequences\consonant\S2_NSL_Consonant_Dark\TAA.npz,त,TAA,121,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\THA.npz,ठ,THA,132,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\THAA.npz,थ,THAA,145,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\TRA.npz,त्र,TRA,84,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Dark\T.npz,Unknown,T,121,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Dark\T_SHA.npz,श,T_SHA,121,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\WA.npz,व,WA,111,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\YA.npz,य,YA,87,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark\YAN.npz,ञ,YAN,102,False,S2,sign
@@ -259,7 +259,7 @@ sequences\consonant\S2_NSL_Consonant_Dark_cropped\DA.npz,ड,DA,158,False,S2,sig
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\DAA.npz,द,DAA,103,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\DHA.npz,ढ,DHA,118,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\DHAA.npz,ध,DHAA,118,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Dark_cropped\D.npz,Unknown,D,73,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Dark_cropped\D_SHA.npz,स,D_SHA,73,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\GA.npz,ग,GA,113,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\GHA.npz,घ,GHA,132,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\GYA.npz,ज्ञ,GYA,123,False,S2,sign
@@ -271,7 +271,7 @@ sequences\consonant\S2_NSL_Consonant_Dark_cropped\KHA.npz,ख,KHA,79,False,S2,si
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\KSHA.npz,क्ष,KSHA,76,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\LA.npz,ल,LA,136,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\MA.npz,म,MA,82,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Dark_cropped\M.npz,Unknown,M,92,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Dark_cropped\M_SHA.npz,ष,M_SHA,92,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\NA.npz,ण,NA,122,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\NAA.npz,न,NAA,110,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\NGA.npz,ङ,NGA,70,False,S2,sign
@@ -283,7 +283,7 @@ sequences\consonant\S2_NSL_Consonant_Dark_cropped\TAA.npz,त,TAA,121,False,S2,s
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\THA.npz,ठ,THA,132,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\THAA.npz,थ,THAA,145,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\TRA.npz,त्र,TRA,84,False,S2,sign
-sequences\consonant\S2_NSL_Consonant_Dark_cropped\T.npz,Unknown,T,121,False,S2,sign
+sequences\consonant\S2_NSL_Consonant_Dark_cropped\T_SHA.npz,श,T_SHA,121,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\WA.npz,व,WA,111,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\YA.npz,य,YA,87,False,S2,sign
 sequences\consonant\S2_NSL_Consonant_Dark_cropped\YAN.npz,ञ,YAN,102,False,S2,sign

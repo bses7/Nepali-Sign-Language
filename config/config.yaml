@@ -72,3 +72,9 @@ processing:
     "KSHA": "क्ष"
     "TRA": "त्र"
     "GYA": "ज्ञ"
+training:
+  batch_size: 32
+  epochs: 100
+  learning_rate: 0.0001
+  model_save_path: "experiments/best_model.pth"
+  checkpoint_dir: "experiments"
