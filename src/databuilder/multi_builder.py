@@ -39,7 +39,7 @@ class MultiBuilder(BaseBuilder):
                 unit="csv",
                 leave=False
             ):
-                df = pd.read_csv(csv_path)
+                df = pd.read_csv(csv_path, keep_default_na=False)
                 if df.empty:
                     continue
                 

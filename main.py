@@ -11,7 +11,7 @@ def main():
     parser = argparse.ArgumentParser(description="NSL Fingerspelling Pipeline")
     
     parser.add_argument("--stage", type=str, required=True, 
-                        choices=["build", "prep", "train"], 
+                        choices=["build", "prep", "train", "generate"], 
                         help="prep: build vocab | build: process videos")
     
     parser.add_argument("--data", type=str, required=False, choices=["vowel", "consonant"])
@@ -59,6 +59,26 @@ def main():
             print(f"✅ Consolidated {len(df)} samples.")
 
         train_model(config)
+
+    elif args.stage == "generate":
+        print(f"✍️ Generating NSL for input...")
+        from src.inference.inference_engine import NSLGenerator
+        
+        # Initialize Generator
+        generator = NSLGenerator(
+            model_path=config['training']['model_save_path'],
+            vocab_path="vocab.json"
+        )
+        
+        # Get word from user
+        user_input = input("Enter Nepali word to fingerspell: ")
+        
+        # Generate
+        motion = generator.generate(user_input)
+        
+        # Save results
+        out_file = Path("experiments/generated_output.npz")
+        generator.save_to_npz(motion, out_file)
 
 
 if __name__ == "__main__":

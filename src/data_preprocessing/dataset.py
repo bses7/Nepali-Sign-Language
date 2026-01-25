@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from pathlib import Path
 
 class NSLDataset(Dataset):
-    def __init__(self, metadata_path, sequences_root, tokenizer, max_seq_len=150):
+    def __init__(self, metadata_path, sequences_root, tokenizer, max_seq_len=200, augment=False):
         """
         Args:
             metadata_path: Path to the consolidated CSV
@@ -13,10 +13,11 @@ class NSLDataset(Dataset):
             tokenizer: The NSLTokenizer instance
             max_seq_len: Maximum number of frames to allow (padding target)
         """
-        self.df = pd.read_csv(metadata_path)
+        self.df = pd.read_csv(metadata_path, keep_default_na=False)
         self.sequences_root = Path(sequences_root)
         self.tokenizer = tokenizer
         self.max_seq_len = max_seq_len
+        self.augment = augment
 
     def __len__(self):
         return len(self.df)
@@ -32,8 +33,8 @@ class NSLDataset(Dataset):
         
         pose = data['pose'][:, :, :3].reshape(data['pose'].shape[0], -1) 
 
-        lh = data['lh'].reshape(data['lh'].shape[0], -1)
-        rh = data['rh'].reshape(data['rh'].shape[0], -1)
+        lh = data['lh'].reshape(data['lh'].shape[0], -1) * 5.0 # Scale up by 5
+        rh = data['rh'].reshape(data['rh'].shape[0], -1) * 5.0 # Scale up by 5
         
         features = np.concatenate([pose, lh, rh], axis=1)
         
@@ -41,6 +42,11 @@ class NSLDataset(Dataset):
         
         features = torch.tensor(features, dtype=torch.float32)
         token_ids = torch.tensor(token_ids, dtype=torch.long)
+
+        if hasattr(self, 'augment') and self.augment:
+            features += torch.randn_like(features) * 0.003
+            
+            noise = torch.randn_like(features) * 0.005
         
         return {
             'features': features,
