@@ -4,6 +4,8 @@ from pathlib import Path
 from src.models.motion_transformer import NSLTransformer
 from src.data_preprocessing.tokenizer import NSLTokenizer
 import pandas as pd
+from scipy.signal import savgol_filter
+
 
 class NSLGenerator:
     def __init__(self, model_path, vocab_path, device=None):
@@ -16,39 +18,43 @@ class NSLGenerator:
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.model.eval()
 
-        # --- NEW: Load a 'Seed Pose' from your dataset ---
-        # This gives the model a realistic starting point
         self.seed_pose = self.load_default_seed()
+
+    def smooth_motion(self, motion, window_size=15, poly_order=2):
+        """
+        smooths the [Frames, 225] array
+        """
+        if motion.shape[0] <= window_size:
+            window_size = motion.shape[0] // 2 * 2 - 1 
+            if window_size < 3: return motion 
+
+        smoothed = np.zeros_like(motion)
+        for i in range(motion.shape[1]):
+            smoothed[:, i] = savgol_filter(motion[:, i], window_size, poly_order)
+        return smoothed
 
     def load_default_seed(self):
         """Loads the first frame of a real sequence to use as a starting point."""
         try:
-            # 1. Path relative to project root
             csv_path = Path("training_dataset/master_metadata.csv")
             if not csv_path.exists():
                 print(f"❌ Error: CSV not found at {csv_path.absolute()}")
                 return torch.zeros(225).to(self.device)
 
             df = pd.read_csv(csv_path)
-            # Find the first 'sign' (not transition) to use as a neutral pose
             sample_row = df[df['type'] == 'sign'].iloc[0]
             
-            # 2. Construct the full path to the NPZ file
-            # Since relative_path in CSV is 'sequences/NSL_Vowel/...', 
-            # and main.py is in root, we look inside 'training_dataset'
             npz_path = Path("training_dataset") / sample_row['relative_path']
             
             if not npz_path.exists():
-                # Try absolute fallback
                 print(f"⚠️ NPZ not found at {npz_path}, trying direct path...")
                 npz_path = Path(sample_row['relative_path'])
 
             data = np.load(npz_path)
             
-            # 3. Extract first frame
             pose = data['pose'][0, :, :3].flatten()
-            lh = data['lh'][0].flatten()
-            rh = data['rh'][0].flatten()
+            lh = data['lh'][0].flatten() * 5.0  
+            rh = data['rh'][0].flatten() * 5.0  
             combined = np.concatenate([pose, lh, rh])
             
             print(f"✅ Successfully loaded seed pose from: {npz_path.name}")
@@ -58,40 +64,51 @@ class NSLGenerator:
             print(f"❌ Error loading seed: {e}")
             return torch.zeros(225).to(self.device)
 
-    def generate(self, text, max_frames=200):
+    def generate(self, text, frames_per_char=80):
+        """
+        Generates a word by processing each character sequentially.
+        """
         self.model.eval()
-        tokens = torch.tensor(self.tokenizer.tokenize(text)).unsqueeze(0).to(self.device)
         
-        # Start with seed
-        generated_motion = self.seed_pose.unsqueeze(0).unsqueeze(0)
+        # Start with the initial global seed pose
+        current_seed = self.seed_pose.clone().detach().unsqueeze(0).unsqueeze(0)
+        full_motion = []
+
+        print(f"🔤 Sequential Generation for: {text}")
+
+        for char in text:
+            print(f"   -> Signing: {char}")
+            tokens = torch.tensor(self.tokenizer.tokenize(char), dtype=torch.long).unsqueeze(0).to(self.device)
+            
+            char_motion = current_seed.clone()
+            
+            context_window = 20
+
+            with torch.no_grad():
+                for _ in range(frames_per_char):
+                    input_context = char_motion[:, -context_window:, :]
+                    output = self.model(tokens, input_context)
+                    
+                    next_frame = output[:, -1:, :]
+                    char_motion = torch.cat([char_motion, next_frame], dim=1)
+
+            generated_frames = char_motion.squeeze(0)[1:]
+            full_motion.append(generated_frames.cpu().numpy())
+
+            current_seed = char_motion[:, -1:, :]
+
+        final_motion = np.concatenate(full_motion, axis=0)
         
-        # Use a smaller context window during generation
-        # This prevents the 'history' from drowning out the 'text input'
-        context_window = 40 
+        final_motion = self.smooth_motion(final_motion, window_size=15)
 
-        with torch.no_grad():
-            for _ in range(max_frames):
-                # Only look at the last 40 frames
-                input_motion = generated_motion[:, -context_window:, :]
-                
-                output = self.model(tokens, input_motion)
-                
-                # Get the last prediction
-                next_frame = output[:, -1:, :]
-                
-                # Append
-                generated_motion = torch.cat([generated_motion, next_frame], dim=1)
-
-        return generated_motion.squeeze(0).cpu().numpy()
+        return final_motion
     
     def save_to_npz(self, keypoints, output_path):
         """Saves generated keypoints for Blender/Visualization."""
-        # Total 225 = Pose(33*3=99) + LH(21*3=63) + RH(21*3=63)
         pose = keypoints[:, :99].reshape(-1, 33, 3)
         lh = keypoints[:, 99:162].reshape(-1, 21, 3)
         rh = keypoints[:, 162:].reshape(-1, 21, 3)
         
-        # Ensure directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
         np.savez_compressed(output_path, pose=pose, lh=lh, rh=rh)

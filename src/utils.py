@@ -56,3 +56,5 @@ class PoseExtractor:
                     rh_data, rh_meta = norm_pts, meta
                 
         return pose_data, lh_data, rh_data, lh_meta, rh_meta
+    
+    

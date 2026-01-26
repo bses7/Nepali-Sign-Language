@@ -20,13 +20,19 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, :x.size(1)]
 
 class NSLTransformer(nn.Module):
-    def __init__(self, vocab_size, feature_dim=225, d_model=256, nhead=8, num_layers=4, dropout=0.05):
+    def __init__(self, vocab_size, feature_dim=225, d_model=512, nhead=8, num_layers=6, dropout=0.05):
         super().__init__()
         self.d_model = d_model
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.pos_encoder = PositionalEncoding(d_model)
+
+        self.text_encoder = nn.Sequential(
+            nn.Linear(d_model, d_model * 2),
+            nn.ReLU(),
+            nn.Linear(d_model * 2, d_model)
+        )
         self.motion_projection = nn.Linear(feature_dim, d_model)
-        
+
         self.transformer = nn.Transformer(
             d_model=d_model,
             nhead=nhead,
@@ -39,25 +45,23 @@ class NSLTransformer(nn.Module):
         self.output_layer = nn.Linear(d_model, feature_dim)
 
     def forward(self, src_tokens, tgt_motion):
-        # 1. Encode Text (Source)
-        src = self.embedding(src_tokens) * math.sqrt(self.d_model)
+        src = self.embedding(src_tokens) * 5.0 
+        src = self.text_encoder(src)
         src = self.pos_encoder(src)
         
-        # 2. Project Motion (Target)
         tgt = self.motion_projection(tgt_motion) * math.sqrt(self.d_model)
         tgt = self.pos_encoder(tgt)
         
-        # 3. Create Masks
-        # Target mask (prevents looking ahead)
         tgt_mask = self.transformer.generate_square_subsequent_mask(tgt.size(1)).to(tgt.device)
+        src_key_padding_mask = (src_tokens == 0) 
         
-        # KEY ADDITION: Padding masks
-        # This tells the transformer to ignore the [PAD] tokens in the text
-        src_key_padding_mask = (src_tokens == 0) # Assuming 0 is <PAD> id
-        
-        # 4. Run through Transformer
-        # We explicitly separate the memory (text) from the sequence (motion)
         memory = self.transformer.encoder(src, src_key_padding_mask=src_key_padding_mask)
-        output = self.transformer.decoder(tgt, memory, tgt_mask=tgt_mask)
+        
+        output = self.transformer.decoder(
+            tgt, 
+            memory, 
+            tgt_mask=tgt_mask, 
+            memory_key_padding_mask=src_key_padding_mask
+        )
         
         return self.output_layer(output)

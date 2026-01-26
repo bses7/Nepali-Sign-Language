@@ -44,9 +44,11 @@ class NSLDataset(Dataset):
         token_ids = torch.tensor(token_ids, dtype=torch.long)
 
         if hasattr(self, 'augment') and self.augment:
-            features += torch.randn_like(features) * 0.003
+            noise = torch.randn_like(features) * 0.002
+            features += noise
             
-            noise = torch.randn_like(features) * 0.005
+            features[:, 15*3 : 15*3+3] = features[0, 15*3 : 15*3+3] 
+            features[:, 16*3 : 16*3+3] = features[0, 16*3 : 16*3+3]
         
         return {
             'features': features,
