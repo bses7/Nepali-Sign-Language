@@ -51,50 +51,40 @@ class NSLGenerator:
         except:
             return torch.zeros(225).to(self.device)
 
-    def generate(self, text, frames_per_char=60, hold_frames=10):
+    def generate(self, text, frames_per_char=50, hold_frames=15):
         self.model.eval()
+        # Seed is already centered and scaled correctly by load_default_seed()
         current_seed = self.seed_pose.clone().detach().unsqueeze(0).unsqueeze(0)
         
-        # --- SYNC WITH DATASET NORMALIZATION ---
-        l_shoulder = current_seed[0, 0, 33:36].cpu().numpy()
-        r_shoulder = current_seed[0, 0, 36:39].cpu().numpy()
-        s_dist = np.linalg.norm(l_shoulder - r_shoulder)
-        norm_factor = s_dist if s_dist > 0.05 else 0.3
-        current_seed = current_seed / norm_factor
-
         full_motion = []
         for char in text:
             token_list = self.tokenizer.tokenize(char)
-            tokens = torch.tensor(token_list * 3).unsqueeze(0).to(self.device)
-            
+            tokens = torch.tensor(token_list * 10).unsqueeze(0).to(self.device)
             char_motion = current_seed.clone()
-            context_window = 40 # Standard window
-
+            
             with torch.no_grad():
-                for _ in range(frames_per_char):
-                    input_context = char_motion[:, -context_window:, :]
-                    output = self.model(tokens, input_context)
+                for f in range(frames_per_char):
+                    output = self.model(tokens, char_motion[:, -40:, :])
                     next_frame = output[:, -1:, :]
+
+                    mix_factor = 0.95 if f < 10 else 0.80
                     
-                    # Stabilization: Keep high (0.9) so characters are crisp
                     prev_frame = char_motion[:, -1:, :]
-                    stable_frame = (next_frame * 0.9) + (prev_frame * 0.1)
+                    stable_frame = (next_frame * mix_factor) + (prev_frame * (1 - mix_factor))
                     
                     char_motion = torch.cat([char_motion, stable_frame], dim=1)
 
             generated_frames_np = char_motion.squeeze(0)[1:].cpu().numpy()
             full_motion.append(generated_frames_np)
             
-            # Pause between letters
+            # Character Hold (The 'Still' moment)
             if hold_frames > 0:
-                pause = np.repeat(generated_frames_np[-1:], hold_frames, axis=0)
-                full_motion.append(pause)
+                full_motion.append(np.repeat(generated_frames_np[-1:], hold_frames, axis=0))
 
             current_seed = char_motion[:, -1:, :]
 
         final_motion = np.concatenate(full_motion, axis=0)
-        # Smoothing window 11 is safer for crisp signs
-        return self.smooth_motion(final_motion, window_size=11)
+        return self.smooth_motion(final_motion, window_size=15)
 
     def save_to_npz(self, keypoints, output_path):
         pose = keypoints[:, :99].reshape(-1, 33, 3)

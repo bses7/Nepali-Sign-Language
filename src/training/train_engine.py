@@ -12,6 +12,18 @@ from src.data_preprocessing.dataset import NSLDataset, nsl_collate_fn
 from src.models.motion_transformer import NSLTransformer
 from src.evaluation.logger import NSLLogger
 
+def calculate_arm_hand_alignment_loss(pred, target):
+    """Forces the forearm to rotate to match the target palm direction."""
+    p = pred.view(pred.shape[0], pred.shape[1], 75, 3)
+    t = target.view(target.shape[0], target.shape[1], 75, 3)
+    # Forearm vectors: Elbow(13/14) -> Wrist(15/16)
+    p_lh_arm = p[:, :, 15, :] - p[:, :, 13, :]
+    t_lh_arm = t[:, :, 15, :] - t[:, :, 13, :]
+    p_rh_arm = p[:, :, 16, :] - p[:, :, 14, :]
+    t_rh_arm = t[:, :, 16, :] - t[:, :, 14, :]
+    cos = nn.CosineSimilarity(dim=-1)
+    return (1.0 - cos(p_lh_arm, t_lh_arm).mean()) + (1.0 - cos(p_rh_arm, t_rh_arm).mean())
+
 def calculate_static_body_loss(pred, is_cropped_batch):
     """
     Penalizes the model if the torso (shoulders/hips) moves.
@@ -158,7 +170,7 @@ def train_model(config):
     for epoch in range(config['training']['epochs']):
         model.train()
         # FIX: Initialize all counters
-        t_pos, t_vel, t_ori, t_bone, t_acc = 0, 0, 0, 0, 0
+        t_pos, t_vel, t_ori, t_bone, t_align, t_static = 0, 0, 0, 0, 0, 0
         
         for batch in train_loader:
             src, tgt = batch['token_ids'].to(device), batch['features'].to(device)
@@ -172,30 +184,44 @@ def train_model(config):
             optimizer.zero_grad()
             output = model(src, tgt_input)
 
-            # --- WEIGHTING ---
+            # --- DYNAMIC VECTORIZED WEIGHTING ---
             batch_weights = torch.ones_like(output).to(device)
-            batch_weights[:, :, :99] = 5.0 
-            batch_weights[:, :, 99:] = 30.0
-
+            
+            # Create boolean masks
+            is_trans_mask = torch.tensor([t == 'transition' for t in batch['types']]).to(device)
+            is_sign_mask = ~is_trans_mask
+            
+            # Apply weights based on type (Sign vs Transition)
+            # For Signs: Focus on Fingers (High Weight)
+            batch_weights[is_sign_mask, :, :99] = 5.0
+            batch_weights[is_sign_mask, :, 99:] = 40.0
+            
+            # For Transitions: Focus on Arm Movement (Higher Pose Weight)
+            batch_weights[is_trans_mask, :, :99] = 15.0
+            batch_weights[is_trans_mask, :, 99:] = 10.0
+            
+            # Mask out Pose for cropped videos (0 weight)
             batch_weights[is_cropped_batch, :, :99] = 0.0
+            
+            # Apply Z-axis boost
             for i in range(2, 225, 3): batch_weights[:, :, i] *= 1.5
 
             pos_loss = (criterion(output, tgt_expected) * batch_weights).mean()
             vel_loss = calculate_velocity_loss(output, tgt_expected)
             ori_loss = calculate_orientation_loss(output, tgt_expected)
             bone_loss = calculate_bone_consistency_loss(output, tgt_expected)
-
+            align_loss = calculate_arm_hand_alignment_loss(output, tgt_expected)
             static_loss = calculate_static_body_loss(output, is_cropped_batch)
 
-            loss = pos_loss + (2.0 * vel_loss) + (10.0 * ori_loss) + \
-                   (5.0 * bone_loss) + (10.0 * static_loss)
+            loss = pos_loss + (2.0 * vel_loss) + (20.0 * ori_loss) + \
+                   (10.0 * align_loss) + (5.0 * bone_loss) + (10.0 * static_loss)
             
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
-            t_pos += pos_loss.item(); t_vel += vel_loss.item()
-            t_ori += ori_loss.item(); t_bone += bone_loss.item()
+            t_pos += pos_loss.item(); t_vel += vel_loss.item(); t_ori += ori_loss.item()
+            t_bone += bone_loss.item(); t_align += align_loss.item(); t_static += static_loss.item()
 
         # Validation
         model.eval()
@@ -211,7 +237,7 @@ def train_model(config):
         scheduler.step(avg_val)
 
         print(f"Epoch [{epoch+1}/{config['training']['epochs']}]")
-        print(f"Pos: {t_pos/len(train_loader):.4f} | Ori: {t_ori/len(train_loader):.4f} | Bone: {t_bone/len(train_loader):.4f} | Val: {avg_val:.4f}")
+        print(f"Pos: {t_pos/len(train_loader):.4f} | Ori: {t_ori/len(train_loader):.4f} | Bone: {t_bone/len(train_loader):.4f} | Align: {t_align/len(train_loader):.4f} | Val: {avg_val:.4f}")
 
         if (epoch + 1) % 50 == 0:
             save_visual_snapshot(model, tokenizer, epoch+1, device, eval_dir, config)
@@ -220,7 +246,7 @@ def train_model(config):
             best_val_loss = avg_val
             early_stop_counter = 0
             torch.save({'model_state_dict': model.state_dict(), 'vocab_size': len(tokenizer.vocab)}, save_path)
-            print("⭐ Specialist Model Saved")
+            print("⭐ Model Saved")
         else:
             early_stop_counter += 1
             if early_stop_counter >= patience:

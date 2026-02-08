@@ -10,7 +10,9 @@ class NSLDataset(Dataset):
         Specialized Dataset for Single Sign Perfection.
         """
         full_df = pd.read_csv(metadata_path, keep_default_na=False)
-        self.df = full_df[full_df['type'] == 'sign'].reset_index(drop=True)
+        # self.df = full_df[full_df['type'] == 'sign'].reset_index(drop=True)
+
+        self.df = full_df[full_df['type'].isin(['sign', 'transition'])].reset_index(drop=True)
         
         self.sequences_root = Path(sequences_root)
         self.tokenizer = tokenizer
@@ -71,7 +73,8 @@ class NSLDataset(Dataset):
         features = np.concatenate([pose, lh, rh], axis=1)
         
         features = torch.tensor(features, dtype=torch.float32)
-        token_ids = torch.tensor(self.tokenizer.tokenize(row['char']), dtype=torch.long)
+        char = row['char'] if row['type'] == 'sign' else "transition"
+        token_ids = torch.tensor(self.tokenizer.tokenize(char), dtype=torch.long)
 
         if self.augment:
             features += torch.randn_like(features) * 0.001
@@ -85,22 +88,15 @@ class NSLDataset(Dataset):
         return {
             'features': features, 
             'token_ids': token_ids, 
-            'char': row['char'], 
+            'type': row['type'], 
             'is_cropped': is_cropped
         }
 
 def nsl_collate_fn(batch):
     batch.sort(key=lambda x: x['features'].shape[0], reverse=True)
-    features = [item['features'] for item in batch]
-    token_ids = [item['token_ids'] for item in batch]
-    is_cropped = torch.tensor([item['is_cropped'] for item in batch], dtype=torch.bool)
-
-    features_padded = torch.nn.utils.rnn.pad_sequence(features, batch_first=True)
-    tokens_padded = torch.nn.utils.rnn.pad_sequence(token_ids, batch_first=True)
-    
     return {
-        'features': features_padded,
-        'token_ids': tokens_padded,
-        'lengths': torch.tensor([f.shape[0] for f in features]),
-        'is_cropped': is_cropped
+        'features': torch.nn.utils.rnn.pad_sequence([item['features'] for item in batch], batch_first=True),
+        'token_ids': torch.nn.utils.rnn.pad_sequence([item['token_ids'] for item in batch], batch_first=True),
+        'types': [item['type'] for item in batch],
+        'is_cropped': torch.tensor([item['is_cropped'] for item in batch], dtype=torch.bool)
     }

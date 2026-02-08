@@ -17,17 +17,17 @@ class NSLTokenizer:
             self.build_vocab(config)
 
     def build_vocab(self, config):
-
         vowels = list(config['processing']['label_map'].values())
         consonants = list(config['processing']['consonant_label_map'].values())
         
         unique_chars = sorted(list(set(vowels + consonants)))
         
+        # ADD THIS LINE: Add 'transition' to the vocabulary
         self.vocab.extend(unique_chars)
+        self.vocab.append("transition") # <--- Explicit token for movement
         
         self.char2idx = {char: idx for idx, char in enumerate(self.vocab)}
         self.idx2char = {idx: char for char, idx in self.char2idx.items()}
-        
         print(f"Vocabulary built! Size: {len(self.vocab)} tokens.")
 
     def tokenize(self, text):
