@@ -20,7 +20,7 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, :x.size(1)]
 
 class NSLTransformer(nn.Module):
-    def __init__(self, vocab_size, feature_dim=225, d_model=256, nhead=8, num_layers=4, dropout=0.05):
+    def __init__(self, vocab_size, feature_dim=225, d_model=512, nhead=8, num_layers=6, dropout=0.05):
         super().__init__()
         self.d_model = d_model
         self.embedding = nn.Embedding(vocab_size, d_model)
@@ -61,7 +61,7 @@ class NSLTransformer(nn.Module):
             tgt, 
             memory, 
             tgt_mask=tgt_mask, 
-            memory_key_padding_mask=src_key_padding_mask
+            memory_key_padding_mask=src_key_padding_mask, 
         )
         
         return self.output_layer(output)
