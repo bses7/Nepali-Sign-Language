@@ -12,6 +12,27 @@ from src.data_preprocessing.dataset import NSLDataset, nsl_collate_fn
 from src.models.motion_transformer import NSLTransformer
 from src.evaluation.logger import NSLLogger
 
+def calculate_static_body_loss(pred, is_cropped_batch):
+    """
+    Penalizes the model if the torso (shoulders/hips) moves.
+    In fingerspelling, the body should be like a statue.
+    """
+    # Only calculate for full-body videos
+    full_body_mask = ~is_cropped_batch
+    if not full_body_mask.any():
+        return torch.tensor(0.0).to(pred.device)
+
+    # Landmarks 11, 12 (Shoulders) and 23, 24 (Hips)
+    torso_indices = [11, 12, 23, 24]
+    p = pred.view(pred.shape[0], pred.shape[1], 75, 3)
+    
+    # Calculate movement (variance) over time for these points
+    # We want the variance to be zero (no movement)
+    torso_pts = p[full_body_mask][:, :, torso_indices, :]
+    movement = torso_pts[:, 1:, :, :] - torso_pts[:, :-1, :, :]
+    
+    return torch.mean(movement**2)
+
 def calculate_acceleration_loss(pred, target):
     """Measures change in velocity to ensure smoothness."""
     if pred.shape[1] < 3: return torch.tensor(0.0).to(pred.device)
@@ -68,7 +89,6 @@ def calculate_orientation_loss(pred, target):
     cos = nn.CosineSimilarity(dim=-1)
     return (1.0 - cos(p_norm, t_norm)).mean()
 
-# (calculate_velocity_loss and calculate_acceleration_loss remain the same)
 
 def save_visual_snapshot(model, tokenizer, epoch, device, save_dir, config):
     """Uses a real seed to generate a high-quality progress check."""
@@ -153,16 +173,22 @@ def train_model(config):
             output = model(src, tgt_input)
 
             # --- WEIGHTING ---
-            weights = torch.ones(225).to(device)
-            weights[99:] = 15.0 
-            for i in range(2, 225, 3): weights[i] *= 1.5
+            batch_weights = torch.ones_like(output).to(device)
+            batch_weights[:, :, :99] = 5.0 
+            batch_weights[:, :, 99:] = 30.0
 
-            pos_loss = (criterion(output, tgt_expected) * weights).mean()
+            batch_weights[is_cropped_batch, :, :99] = 0.0
+            for i in range(2, 225, 3): batch_weights[:, :, i] *= 1.5
+
+            pos_loss = (criterion(output, tgt_expected) * batch_weights).mean()
             vel_loss = calculate_velocity_loss(output, tgt_expected)
             ori_loss = calculate_orientation_loss(output, tgt_expected)
             bone_loss = calculate_bone_consistency_loss(output, tgt_expected)
 
-            loss = pos_loss + (1.0 * vel_loss) + (5.0 * ori_loss) + (2.0 * bone_loss)
+            static_loss = calculate_static_body_loss(output, is_cropped_batch)
+
+            loss = pos_loss + (2.0 * vel_loss) + (10.0 * ori_loss) + \
+                   (5.0 * bone_loss) + (10.0 * static_loss)
             
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)

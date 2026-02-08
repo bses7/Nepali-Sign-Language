@@ -57,6 +57,7 @@ class NSLDataset(Dataset):
         lh = data['lh'].reshape(data['lh'].shape[0], -1) * 5.0 # BACK TO 5.0
         rh = data['rh'].reshape(data['rh'].shape[0], -1) * 5.0 # BACK TO 5.0
 
+        # 2. Pose Centering Logic
         pose = pose / 0.5
         
         if not is_cropped:
@@ -66,7 +67,7 @@ class NSLDataset(Dataset):
             for c in range(0, 99, 3): 
                 pose[:, c] -= mid_x
                 pose[:, c+1] -= mid_y
-        
+
         features = np.concatenate([pose, lh, rh], axis=1)
         
         features = torch.tensor(features, dtype=torch.float32)
