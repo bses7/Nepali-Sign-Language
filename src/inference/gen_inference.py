@@ -51,40 +51,47 @@ class NSLGenerator:
         except:
             return torch.zeros(225).to(self.device)
 
-    def generate(self, text, frames_per_char=50, hold_frames=15):
+    def generate(self, text, frames_per_char=50, trans_frames=15, hold_frames=10):
         self.model.eval()
-        # Seed is already centered and scaled correctly by load_default_seed()
         current_seed = self.seed_pose.clone().detach().unsqueeze(0).unsqueeze(0)
-        
         full_motion = []
-        for char in text:
-            token_list = self.tokenizer.tokenize(char)
-            tokens = torch.tensor(token_list * 10).unsqueeze(0).to(self.device)
-            char_motion = current_seed.clone()
+
+        # List of segments to sign: [Sign A, Transition, Sign B, Transition...]
+        segments = []
+        for i, char in enumerate(text):
+            segments.append({'label': char, 'frames': frames_per_char})
+            if i < len(text) - 1:
+                segments.append({'label': 'transition', 'frames': trans_frames})
+
+        for seg in segments:
+            char = seg['label']
+            print(f"   -> Mode: {char}")
             
+            token_list = self.tokenizer.tokenize(char)
+            # Repeat tokens for strong attention
+            tokens = torch.tensor(token_list * 5).unsqueeze(0).to(self.device)
+            
+            char_motion = current_seed.clone()
+            context_window = 20
+
             with torch.no_grad():
-                for f in range(frames_per_char):
-                    output = self.model(tokens, char_motion[:, -40:, :])
+                for f in range(seg['frames']):
+                    output = self.model(tokens, char_motion[:, -context_window:, :])
                     next_frame = output[:, -1:, :]
 
-                    mix_factor = 0.95 if f < 10 else 0.80
-                    
-                    prev_frame = char_motion[:, -1:, :]
-                    stable_frame = (next_frame * mix_factor) + (prev_frame * (1 - mix_factor))
-                    
+                    # Stabilization logic
+                    mix = 0.95 if f < 10 else 0.85 
+                    stable_frame = (next_frame * mix) + (char_motion[:, -1:, :] * (1-mix))
                     char_motion = torch.cat([char_motion, stable_frame], dim=1)
 
             generated_frames_np = char_motion.squeeze(0)[1:].cpu().numpy()
             full_motion.append(generated_frames_np)
             
-            # Character Hold (The 'Still' moment)
-            if hold_frames > 0:
-                full_motion.append(np.repeat(generated_frames_np[-1:], hold_frames, axis=0))
-
+            # Update seed for next character
             current_seed = char_motion[:, -1:, :]
 
         final_motion = np.concatenate(full_motion, axis=0)
-        return self.smooth_motion(final_motion, window_size=15)
+        return self.smooth_motion(final_motion, window_size=11)
 
     def save_to_npz(self, keypoints, output_path):
         pose = keypoints[:, :99].reshape(-1, 33, 3)

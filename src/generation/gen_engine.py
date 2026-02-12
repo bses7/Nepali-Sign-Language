@@ -8,7 +8,7 @@ import os
 import numpy as np
 
 from src.data_preprocessing.tokenizer import NSLTokenizer
-from src.data_preprocessing.dataset import NSLDataset, nsl_collate_fn
+from src.data_preprocessing.gen_dataset import NSLDataset, nsl_collate_fn
 from src.models.motion_transformer import NSLTransformer
 from src.evaluation.logger import NSLLogger
 
@@ -237,7 +237,7 @@ def train_model(config):
         scheduler.step(avg_val)
 
         print(f"Epoch [{epoch+1}/{config['training']['epochs']}]")
-        print(f"Pos: {t_pos/len(train_loader):.4f} | Ori: {t_ori/len(train_loader):.4f} | Bone: {t_bone/len(train_loader):.4f} | Align: {t_align/len(train_loader):.4f} | Val: {avg_val:.4f}")
+        print(f"Pos: {t_pos/len(train_loader):.4f} | Ori: {t_ori/len(train_loader):.4f} | Bone: {t_bone/len(train_loader):.4f} | Align: {t_align/len(train_loader):.6f} | Static: {t_static/len(train_loader):.5f} | Val: {avg_val:.4f}")
 
         if (epoch + 1) % 50 == 0:
             save_visual_snapshot(model, tokenizer, epoch+1, device, eval_dir, config)

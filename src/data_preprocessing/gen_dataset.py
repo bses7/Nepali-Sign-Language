@@ -56,8 +56,8 @@ class NSLDataset(Dataset):
         
         # 1. Extract Components
         pose = data['pose'][:, :, :3].reshape(data['pose'].shape[0], -1) 
-        lh = data['lh'].reshape(data['lh'].shape[0], -1) * 5.0 # BACK TO 5.0
-        rh = data['rh'].reshape(data['rh'].shape[0], -1) * 5.0 # BACK TO 5.0
+        lh = data['lh'].reshape(data['lh'].shape[0], -1) * 5.0
+        rh = data['rh'].reshape(data['rh'].shape[0], -1) * 5.0 
 
         # 2. Pose Centering Logic
         pose = pose / 0.5
