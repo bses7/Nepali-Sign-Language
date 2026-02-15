@@ -51,44 +51,42 @@ class NSLGenerator:
         except:
             return torch.zeros(225).to(self.device)
 
-    def generate(self, text, frames_per_char=50, trans_frames=15, hold_frames=10):
+    def generate(self, text, frames_per_char=50, trans_frames=20):
         self.model.eval()
+        # Ensure seed is scaled to the 0.5 dataset rule
         current_seed = self.seed_pose.clone().detach().unsqueeze(0).unsqueeze(0)
+        current_seed = current_seed / 0.5 
+        
         full_motion = []
-
-        # List of segments to sign: [Sign A, Transition, Sign B, Transition...]
-        segments = []
         for i, char in enumerate(text):
-            segments.append({'label': char, 'frames': frames_per_char})
-            if i < len(text) - 1:
-                segments.append({'label': 'transition', 'frames': trans_frames})
-
-        for seg in segments:
-            char = seg['label']
-            print(f"   -> Mode: {char}")
-            
-            token_list = self.tokenizer.tokenize(char)
-            # Repeat tokens for strong attention
-            tokens = torch.tensor(token_list * 5).unsqueeze(0).to(self.device)
-            
+            # --- PHASE 1: SIGN HOLD ---
+            tokens = torch.tensor(self.tokenizer.tokenize(char) * 10).unsqueeze(0).to(self.device)
             char_motion = current_seed.clone()
-            context_window = 20
-
             with torch.no_grad():
-                for f in range(seg['frames']):
-                    output = self.model(tokens, char_motion[:, -context_window:, :])
-                    next_frame = output[:, -1:, :]
-
-                    # Stabilization logic
-                    mix = 0.95 if f < 10 else 0.85 
-                    stable_frame = (next_frame * mix) + (char_motion[:, -1:, :] * (1-mix))
+                for f in range(frames_per_char):
+                    output = self.model(tokens, char_motion[:, -40:, :])
+                    # High stability to keep sign crisp
+                    stable_frame = (output[:, -1:, :] * 0.8) + (char_motion[:, -1:, :] * 0.2)
                     char_motion = torch.cat([char_motion, stable_frame], dim=1)
-
-            generated_frames_np = char_motion.squeeze(0)[1:].cpu().numpy()
-            full_motion.append(generated_frames_np)
             
-            # Update seed for next character
+            full_motion.append(char_motion.squeeze(0)[1:].cpu().numpy())
             current_seed = char_motion[:, -1:, :]
+
+            # --- PHASE 2: TARGETED TRANSITION ---
+            if i < len(text) - 1:
+                next_char = text[i+1]
+                # Feed the NEXT character token so the arm knows WHERE to rotate
+                trans_tokens = torch.tensor(self.tokenizer.tokenize(next_char) * 5).unsqueeze(0).to(self.device)
+                trans_motion = current_seed.clone()
+                with torch.no_grad():
+                    for f in range(trans_frames):
+                        output = self.model(trans_tokens, trans_motion[:, -40:, :])
+                        # Low stability (0.95) to allow fast rotation
+                        stable_frame = (output[:, -1:, :] * 0.95) + (trans_motion[:, -1:, :] * 0.05)
+                        trans_motion = torch.cat([trans_motion, stable_frame], dim=1)
+                
+                full_motion.append(trans_motion.squeeze(0)[1:].cpu().numpy())
+                current_seed = trans_motion[:, -1:, :]
 
         final_motion = np.concatenate(full_motion, axis=0)
         return self.smooth_motion(final_motion, window_size=11)

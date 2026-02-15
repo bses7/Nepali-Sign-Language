@@ -17,9 +17,9 @@ mediapipe:
   use_face: false
 
 processing:
-  fps_target: 60 # Keep original 60fps
-  frame_skip: 1 # Set to 2 if you want to downsample to 30fps
-  normalize: true # Wrist-centric normalization
+  fps_target: 60 
+  frame_skip: 1 
+  normalize: true 
   cropped_identifiers: ["Cropped"]
   label_map:
     "A": "अ"

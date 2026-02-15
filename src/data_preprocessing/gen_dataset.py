@@ -30,7 +30,6 @@ class NSLDataset(Dataset):
         cos_a = np.cos(angle)
         sin_a = np.sin(angle)
         
-        # ADDED .float() here to match the features precision
         R = torch.tensor([
             [cos_a, -sin_a, 0], 
             [sin_a, cos_a, 0], 
@@ -38,10 +37,8 @@ class NSLDataset(Dataset):
         ]).float() 
         
         frames = batch_pts.shape[0]
-        # Reshape to [Frames, 21 landmarks, 3 coordinates]
         pts = batch_pts.view(frames, 21, 3)
         
-        # Apply rotation and flatten back
         pts = torch.matmul(pts, R.to(batch_pts.device))
         return pts.reshape(frames, -1)
 
@@ -54,12 +51,10 @@ class NSLDataset(Dataset):
         data = np.load(npz_path)
         is_cropped = bool(row['is_cropped'])
         
-        # 1. Extract Components
         pose = data['pose'][:, :, :3].reshape(data['pose'].shape[0], -1) 
         lh = data['lh'].reshape(data['lh'].shape[0], -1) * 5.0
         rh = data['rh'].reshape(data['rh'].shape[0], -1) * 5.0 
 
-        # 2. Pose Centering Logic
         pose = pose / 0.5
         
         if not is_cropped:

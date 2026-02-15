@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from pathlib import Path
-import pandas as pd # Added for consolidation check
+import pandas as pd 
 import os 
 import numpy as np
 
@@ -12,11 +12,23 @@ from src.data_preprocessing.gen_dataset import NSLDataset, nsl_collate_fn
 from src.models.motion_transformer import NSLTransformer
 from src.evaluation.logger import NSLLogger
 
+def calculate_finger_direction_loss(pred, target):
+    """Ensures fingers point in the correct 3D direction (e.g., UP for 'र')."""
+    p = pred.view(pred.shape[0], pred.shape[1], 75, 3)
+    t = target.view(target.shape[0], target.shape[1], 75, 3)
+
+    segments = [(37,40), (41,44), (45,48), (49,52), (58,61), (62,65), (66,69), (70,73)]
+    cos = nn.CosineSimilarity(dim=-1)
+    total_dir_loss = 0
+    for k, tip in segments:
+        p_vec, t_vec = p[:, :, tip, :] - p[:, :, k, :], t[:, :, tip, :] - t[:, :, k, :]
+        total_dir_loss += (1.0 - cos(p_vec, t_vec).mean())
+    return total_dir_loss
+
 def calculate_arm_hand_alignment_loss(pred, target):
     """Forces the forearm to rotate to match the target palm direction."""
     p = pred.view(pred.shape[0], pred.shape[1], 75, 3)
     t = target.view(target.shape[0], target.shape[1], 75, 3)
-    # Forearm vectors: Elbow(13/14) -> Wrist(15/16)
     p_lh_arm = p[:, :, 15, :] - p[:, :, 13, :]
     t_lh_arm = t[:, :, 15, :] - t[:, :, 13, :]
     p_rh_arm = p[:, :, 16, :] - p[:, :, 14, :]
@@ -29,17 +41,13 @@ def calculate_static_body_loss(pred, is_cropped_batch):
     Penalizes the model if the torso (shoulders/hips) moves.
     In fingerspelling, the body should be like a statue.
     """
-    # Only calculate for full-body videos
     full_body_mask = ~is_cropped_batch
     if not full_body_mask.any():
         return torch.tensor(0.0).to(pred.device)
 
-    # Landmarks 11, 12 (Shoulders) and 23, 24 (Hips)
     torso_indices = [11, 12, 23, 24]
     p = pred.view(pred.shape[0], pred.shape[1], 75, 3)
     
-    # Calculate movement (variance) over time for these points
-    # We want the variance to be zero (no movement)
     torso_pts = p[full_body_mask][:, :, torso_indices, :]
     movement = torso_pts[:, 1:, :, :] - torso_pts[:, :-1, :, :]
     
@@ -59,7 +67,6 @@ def calculate_velocity_loss(pred, target):
     Measures the difference in movement between consecutive frames.
     pred/target shape: [Batch, Frames, 225]
     """
-    # Calculate difference between frame(t) and frame(t+1)
     pred_vel = pred[:, 1:, :] - pred[:, :-1, :]
     target_vel = target[:, 1:, :] - target[:, :-1, :]
     return nn.MSELoss()(pred_vel, target_vel)
@@ -72,8 +79,6 @@ def calculate_bone_consistency_loss(pred, target):
     p = pred.view(pred.shape[0], pred.shape[1], 75, 3)
     t = target.view(target.shape[0], target.shape[1], 75, 3)
 
-    # Pairs of landmarks that form bones (Wrist to Tips)
-    # LH: 33 is wrist. Bones: (33,34), (34,35)... (33,38), (38,39)...
     lh_bones = [(33,34), (34,35), (37,38), (38,39), (41,42), (42,43), (45,46), (46,47), (49,50), (50,51)]
     rh_bones = [(54,55), (55,56), (58,59), (59,60), (62,63), (63,64), (66,67), (67,68), (70,71), (71,72)]
     
@@ -108,7 +113,6 @@ def save_visual_snapshot(model, tokenizer, epoch, device, save_dir, config):
     char_to_test = "A" 
     tokens = torch.tensor(tokenizer.tokenize(char_to_test)).unsqueeze(0).to(device)
     
-    # Load a real seed frame
     csv_path = Path(config['paths']['output_dir']) / "master_metadata.csv"
     df = pd.read_csv(csv_path)
     sample_path = Path("training_dataset") / df[df['type'] == 'sign'].iloc[0]['relative_path']
@@ -140,7 +144,6 @@ def train_model(config):
     tokenizer = NSLTokenizer()
     tokenizer.load_vocab("vocab.json")
     
-    # Load ONLY Single sign dataset
     dataset = NSLDataset(
         metadata_path=str(Path(config['paths']['output_dir']) / "master_metadata.csv"),
         sequences_root=config['paths']['sequences_dir'],
@@ -153,7 +156,6 @@ def train_model(config):
 
     model = NSLTransformer(vocab_size=len(tokenizer.vocab)).to(device)
     
-    # Enable Fine-Tuning
     if save_path.exists():
         print("🔄 Loading existing model for Specialist Fine-tuning...")
         checkpoint = torch.load(save_path)
@@ -169,61 +171,57 @@ def train_model(config):
 
     for epoch in range(config['training']['epochs']):
         model.train()
-        # FIX: Initialize all counters
-        t_pos, t_vel, t_ori, t_bone, t_align, t_static = 0, 0, 0, 0, 0, 0
+        t_pos, t_vel, t_ori, t_bone, t_align, t_static, t_dir = 0, 0, 0, 0, 0, 0, 0
         
         for batch in train_loader:
             src, tgt = batch['token_ids'].to(device), batch['features'].to(device)
             is_cropped_batch = batch['is_cropped'].to(device)
             tgt_input, tgt_expected = tgt[:, :-1, :], tgt[:, 1:, :]
 
-            # Scheduled Sampling (Improves inference robustness)
             if epoch > 10:
                 tgt_input = tgt_input + torch.randn_like(tgt_input) * 0.003
             
             optimizer.zero_grad()
             output = model(src, tgt_input)
 
-            # --- DYNAMIC VECTORIZED WEIGHTING ---
             batch_weights = torch.ones_like(output).to(device)
             
-            # Create boolean masks
             is_trans_mask = torch.tensor([t == 'transition' for t in batch['types']]).to(device)
             is_sign_mask = ~is_trans_mask
             
-            # Apply weights based on type (Sign vs Transition)
-            # For Signs: Focus on Fingers (High Weight)
             batch_weights[is_sign_mask, :, :99] = 5.0
-            batch_weights[is_sign_mask, :, 99:] = 40.0
+            batch_weights[is_sign_mask, :, 99:] = 50.0
             
-            # For Transitions: Focus on Arm Movement (Higher Pose Weight)
-            batch_weights[is_trans_mask, :, :99] = 15.0
+            batch_weights[is_trans_mask, :, :99] = 20.0
             batch_weights[is_trans_mask, :, 99:] = 10.0
             
-            # Mask out Pose for cropped videos (0 weight)
             batch_weights[is_cropped_batch, :, :99] = 0.0
             
-            # Apply Z-axis boost
-            for i in range(2, 225, 3): batch_weights[:, :, i] *= 1.5
+            for i in range(2, 225, 3): batch_weights[:, :, i] *= 3.0
 
             pos_loss = (criterion(output, tgt_expected) * batch_weights).mean()
             vel_loss = calculate_velocity_loss(output, tgt_expected)
             ori_loss = calculate_orientation_loss(output, tgt_expected)
             bone_loss = calculate_bone_consistency_loss(output, tgt_expected)
             align_loss = calculate_arm_hand_alignment_loss(output, tgt_expected)
-            static_loss = calculate_static_body_loss(output, is_cropped_batch)
+            # static_loss = calculate_static_body_loss(output, is_cropped_batch)
+            dir_loss = calculate_finger_direction_loss(output, tgt_expected)
 
-            loss = pos_loss + (2.0 * vel_loss) + (20.0 * ori_loss) + \
-                   (10.0 * align_loss) + (5.0 * bone_loss) + (10.0 * static_loss)
+            # loss = pos_loss + (2.0 * vel_loss) + (20.0 * ori_loss) + \
+            #        (10.0 * align_loss) + (5.0 * bone_loss) + (10.0 * static_loss)
+
+            loss = pos_loss + (2.0 * vel_loss) + (30.0 * ori_loss) + \
+                   (20.0 * align_loss) + (20.0 * dir_loss) + (5.0 * bone_loss)
+
             
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
             t_pos += pos_loss.item(); t_vel += vel_loss.item(); t_ori += ori_loss.item()
-            t_bone += bone_loss.item(); t_align += align_loss.item(); t_static += static_loss.item()
+            t_bone += bone_loss.item(); t_align += align_loss.item(); t_dir += dir_loss.item()
+            # t_static += static_loss.item()
 
-        # Validation
         model.eval()
         val_loss_accum = 0
         with torch.no_grad():
@@ -237,7 +235,7 @@ def train_model(config):
         scheduler.step(avg_val)
 
         print(f"Epoch [{epoch+1}/{config['training']['epochs']}]")
-        print(f"Pos: {t_pos/len(train_loader):.4f} | Ori: {t_ori/len(train_loader):.4f} | Bone: {t_bone/len(train_loader):.4f} | Align: {t_align/len(train_loader):.6f} | Static: {t_static/len(train_loader):.5f} | Val: {avg_val:.4f}")
+        print(f"Pos: {t_pos/len(train_loader):.4f} | Ori: {t_ori/len(train_loader):.4f} | Bone: {t_bone/len(train_loader):.4f} | Align: {t_align/len(train_loader):.6f} | Dir: {t_dir/len(train_loader):.5f} | Val: {avg_val:.4f}")
 
         if (epoch + 1) % 50 == 0:
             save_visual_snapshot(model, tokenizer, epoch+1, device, eval_dir, config)
