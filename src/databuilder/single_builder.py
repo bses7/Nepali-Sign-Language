@@ -65,13 +65,7 @@ class SingleBuilder(BaseBuilder):
                         if not ret:
                             break
                         p, lh, rh, lm, rm = self.extractor.process_frame(frame, is_cropped)
-                        frames.append({
-                            'pose': p,
-                            'lh': lh,
-                            'rh': rh,
-                            'lh_meta': lm,
-                            'rh_meta': rm
-                        })
+                        frames.append({'pose': p, 'lh': lh, 'rh': rh, 'lh_meta': lm, 'rh_meta': rm})
                     cap.release()
 
                     save_path = target_dir / f"{raw_label}.npz"

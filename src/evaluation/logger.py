@@ -8,44 +8,38 @@ class NSLLogger:
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.history = []
 
-    def log_epoch(self, epoch, train_pos, train_vel, val_loss, lr):
+    def log_epoch(self, epoch, train_pos, train_vel, train_bone, val_loss, lr):
         data = {
             'epoch': epoch,
             'train_pos': train_pos,
             'train_vel': train_vel,
+            'train_bone': train_bone,
             'val_loss': val_loss,
             'lr': lr
         }
         self.history.append(data)
-        
-        # Save to CSV
         pd.DataFrame(self.history).to_csv(self.log_dir / "training_history.csv", index=False)
-        
-        # Generate plot
         self._plot()
 
     def _plot(self):
         df = pd.DataFrame(self.history)
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
+        # 3 Subplots: Loss, Velocity, and Bone Integrity
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 15))
 
-        # Loss Plot
-        ax1.plot(df['epoch'], df['train_pos'], label='Train Pos (Weighted)')
+        ax1.plot(df['epoch'], df['train_pos'], label='Train Pos')
         ax1.plot(df['epoch'], df['val_loss'], label='Val Loss')
         ax1.set_yscale('log')
-        ax1.set_title('Positional Accuracy')
-        ax1.set_xlabel('Epoch')
-        ax1.set_ylabel('MSE Loss')
-        ax1.legend()
-        ax1.grid(True)
+        ax1.set_title('Learning Curves')
+        ax1.legend(); ax1.grid(True)
 
-        # Velocity Plot
-        ax2.plot(df['epoch'], df['train_vel'], label='Train Vel', color='orange')
-        ax2.set_title('Motion Smoothness (Velocity)')
-        ax2.set_xlabel('Epoch')
-        ax2.set_ylabel('Velocity Loss')
-        ax2.legend()
-        ax2.grid(True)
+        ax2.plot(df['epoch'], df['train_vel'], label='Motion Jitter (Vel)', color='orange')
+        ax2.set_title('Smoothness Loss')
+        ax2.legend(); ax2.grid(True)
+
+        ax3.plot(df['epoch'], df['train_bone'], label='Bone Stretch', color='green')
+        ax3.set_title('Anatomic Integrity (Should stay low)')
+        ax3.legend(); ax3.grid(True)
 
         plt.tight_layout()
-        plt.savefig(self.log_dir / "loss_curves.png")
+        plt.savefig(self.log_dir / "detailed_training_metrics.png")
         plt.close()

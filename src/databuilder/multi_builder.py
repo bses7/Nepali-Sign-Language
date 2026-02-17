@@ -40,8 +40,7 @@ class MultiBuilder(BaseBuilder):
                 leave=False
             ):
                 df = pd.read_csv(csv_path, keep_default_na=False)
-                if df.empty:
-                    continue
+                if df.empty: continue
                 
                 video_name = df.iloc[0]['video_name']
                 video_path = next(
@@ -71,39 +70,24 @@ class MultiBuilder(BaseBuilder):
                     if not ret:
                         break
                     p, lh, rh, lm, rm = self.extractor.process_frame(frame, is_cropped)
-                    all_frames.append({
-                        'pose': p,
-                        'lh': lh,
-                        'rh': rh,
-                        'lh_meta': lm,
-                        'rh_meta': rm
-                    })
+                    all_frames.append({'pose': p, 'lh': lh, 'rh': rh, 'lh_meta': lm, 'rh_meta': rm})
                 cap.release()
 
                 df = df.sort_values('start_frame')
                 signer_id = self.get_signer_id(anno_folder.name)
 
-                for i, row in tqdm(
-                    df.iterrows(),
-                    total=len(df),
-                    desc=f"✂️ Segments ({video_path.stem})",
-                    unit="segment",
-                    leave=False
-                ):
+                for i, row in df.iterrows():
                     s, e, lbl = int(row['start_frame']), int(row['end_frame']), row['label']
                     
                     # 1. Save Sign
                     sign_seg = all_frames[s:e+1]
                     sign_fn = f"{lbl}_{s}_{e}.npz"
+                    nepali_char = label_map.get(lbl, "Unknown")
                     self.save_npz(video_out_dir / sign_fn, sign_seg, info)
-                    metadata.append(
-                        self._create_meta(
-                            video_out_dir, sign_fn,
-                            label_map.get(lbl, "Unknown"),
-                            lbl, len(sign_seg),
-                            is_cropped, signer_id, 'sign'
-                        )
-                    )
+                    metadata.append(self._create_meta(
+                        video_out_dir, sign_fn, nepali_char, lbl, 
+                        len(sign_seg), is_cropped, signer_id, 'sign'
+                    ))
 
                     # 2. Save Transition
                     if i + 1 < len(df):
@@ -112,16 +96,16 @@ class MultiBuilder(BaseBuilder):
                         if te > ts:
                             t_seg = all_frames[ts:te+1]
                             t_fn = f"trans_{lbl}_to_{nxt['label']}.npz"
+
+                            target_char = label_map.get(nxt['label'], "Unknown")
+
                             self.save_npz(video_out_dir / t_fn, t_seg, info)
-                            metadata.append(
-                                self._create_meta(
-                                    video_out_dir, t_fn,
-                                    'transition',
-                                    f"trans_{lbl}_to_{nxt['label']}",
-                                    len(t_seg),
-                                    is_cropped, signer_id, 'transition'
-                                )
-                            )
+                            metadata.append(self._create_meta(
+                                video_out_dir, t_fn,
+                                target_char, # Now the tokenizer knows WHERE the transition is going
+                                f"trans_{lbl}_to_{nxt['label']}",
+                                len(t_seg), is_cropped, signer_id, 'transition'
+                            ))
 
         return metadata
 
