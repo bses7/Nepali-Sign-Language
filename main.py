@@ -11,7 +11,8 @@ def main():
     parser = argparse.ArgumentParser(description="NSL Fingerspelling Pipeline")
     
     parser.add_argument("--stage", type=str, required=True, 
-                        choices=["build", "prep", "train", "generate", "recognize_train"], 
+                        # Added 'rec_inference' to choices
+                        choices=["build", "prep", "train", "generate", "recognize_train", "rec_inference", "practice", "ref_gen"], 
                         help="prep: build vocab | build: process videos | recognize_train: train classifier")
     
     parser.add_argument("--data", type=str, required=False, choices=["vowel", "consonant"])
@@ -67,6 +68,36 @@ def main():
             from src.recognition.rec_engine import train_recognition
             train_recognition(config)
 
+    elif args.stage == "rec_inference":
+        print(f"👁️ Initializing Real-time Recognition Inference...")
+        from src.inference.rec_inference import run_realtime
+        
+        # Pull paths from your config.yaml
+        model_path = config['rec_training']['model_save_path']
+        vocab_path = "vocab.json"
+        
+        if not Path(model_path).exists():
+            print(f"❌ Error: Model not found at {model_path}. Train the model first using --stage recognize_train")
+        else:
+            run_realtime(model_path=model_path, vocab_path=vocab_path)
+
+    elif args.stage == "ref_gen":
+        print("🔧 Stage: Generating Reference Library for Feedback...")
+        from src.recognition.reference_generator import generate_reference_library
+        generate_reference_library(config)
+
+    elif args.stage == "practice":
+        target_char = input("Enter the Nepali character you want to practice: ")
+        print(f"🎯 Practice Mode: Show the sign for '{target_char}'")
+        
+        from src.inference.rec_inference import run_practice_session
+        run_practice_session(
+            target_char=target_char, 
+            model_path=config['rec_training']['model_save_path'],
+            vocab_path="vocab.json",
+            duration=60
+        )
+            
     elif args.stage == "generate":
         print(f"✍️ Generating NSL for input...")
         from src.inference.gen_inference import NSLGenerator

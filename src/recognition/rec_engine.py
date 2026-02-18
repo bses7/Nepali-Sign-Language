@@ -2,20 +2,20 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import pandas as pd
-import numpy as np
 from torch.utils.data import DataLoader
 from pathlib import Path
 from src.data_preprocessing.rec_dataset import NSLRecDataset, nsl_rec_collate_fn
 from src.models.sign_classifier import NSLClassifier
 from src.data_preprocessing.tokenizer import NSLTokenizer
+from src.evaluation.rec_logger import RecLogger
 
 def train_recognition(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    rec_exp_dir = Path("experiments/recognition")
+    rec_exp_dir = Path(config['rec_training']['checkpoint_dir'])
     rec_exp_dir.mkdir(parents=True, exist_ok=True)
     save_path = rec_exp_dir / "best_recognizer.pth"
-    log_path = rec_exp_dir / "rec_history.csv"
+    logger = RecLogger(rec_exp_dir)
     
     tokenizer = NSLTokenizer()
     tokenizer.load_vocab("vocab.json")
@@ -24,9 +24,6 @@ def train_recognition(config):
     all_signers = master_df['signer'].unique()
     train_signers = [s for s in all_signers if s != 'S3']
     val_signers = ['S3']
-
-    print(f"📈 Training on: {train_signers}")
-    print(f"🧪 Testing on: {val_signers} (Signer-Independent Test)")
 
     train_ds = NSLRecDataset(
         metadata_path=str(Path(config['paths']['output_dir']) / "master_metadata.csv"),
@@ -39,23 +36,24 @@ def train_recognition(config):
         tokenizer=tokenizer, signers_to_include=val_signers, augment=False
     )
 
-    train_loader = DataLoader(train_ds, batch_size=32, shuffle=True, collate_fn=nsl_rec_collate_fn)
-    val_loader = DataLoader(val_ds, batch_size=32, shuffle=False, collate_fn=nsl_rec_collate_fn)
+    train_loader = DataLoader(train_ds, batch_size=config['rec_training']['batch_size'], shuffle=True, collate_fn=nsl_rec_collate_fn)
+    val_loader = DataLoader(val_ds, batch_size=config['rec_training']['batch_size'], shuffle=False, collate_fn=nsl_rec_collate_fn)
 
     model = NSLClassifier(num_classes=len(tokenizer.vocab)).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4) 
+    optimizer = optim.AdamW(model.parameters(), lr=float(config['rec_training']['learning_rate'])) 
     
     best_acc = 0.0
+    patience_counter = 0
+    patience_limit = config['rec_training']['early_stopping_patience']
     history = []
 
-    for epoch in range(100):
+    for epoch in range(config['rec_training']['epochs']):
         model.train()
         total_loss, correct = 0, 0
         
         for features, labels in train_loader:
             features, labels = features.to(device), labels.to(device)
-            
             optimizer.zero_grad()
             outputs = model(features)
             loss = criterion(outputs, labels)
@@ -75,24 +73,30 @@ def train_recognition(config):
 
         train_acc = correct / len(train_ds)
         val_acc = val_correct / len(val_ds)
+        avg_loss = total_loss / len(train_loader)
         
-        print(f"Epoch {epoch+1:02d} | Loss: {total_loss/len(train_loader):.4f} | Train Acc: {train_acc:.2%} | Val Acc: {val_acc:.2%}")
+        print(f"Epoch {epoch+1:03d} | Loss: {avg_loss:.4f} | Train Acc: {train_acc:.2%} | Val Acc: {val_acc:.2%}")
 
-        history.append({
-            'epoch': epoch + 1,
-            'train_acc': train_acc,
-            'val_acc': val_acc,
-            'loss': total_loss/len(train_loader)
-        })
-        pd.DataFrame(history).to_csv(log_path, index=False)
+        history.append({'epoch': epoch+1, 'train_acc': train_acc, 'val_acc': val_acc, 'loss': avg_loss})
+        if (epoch + 1) % 5 == 0: 
+            logger.plot_progress(history)
 
         if val_acc > best_acc:
             best_acc = val_acc
+            patience_counter = 0
             torch.save({
+                'epoch': epoch,
                 'model_state_dict': model.state_dict(),
-                'num_classes': len(tokenizer.vocab),
-                'signer_split': {'train': train_signers, 'test': val_signers}
+                'num_classes': len(tokenizer.vocab), 
+                'config': config,
+                'val_acc': val_acc
             }, save_path)
-            print(f"⭐ New Best Accuracy on S3: {val_acc:.2%}. Model updated.")
+            print(f"⭐ Model saved with {val_acc:.2%} accuracy.")
+        else:
+            patience_counter += 1
 
-    print(f"✅ Recognition finished. Best model saved in {rec_exp_dir}")
+        if patience_counter >= patience_limit:
+            print(f"🛑 Early stopping triggered at epoch {epoch+1}")
+            break
+
+    print(f"✅ Training complete. Best Accuracy: {best_acc:.2%}")

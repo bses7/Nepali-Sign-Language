@@ -56,51 +56,46 @@ class NSLGenerator:
             return torch.zeros(225).to(self.device)
 
     def generate(self, text, frames_per_sign=60, frames_per_trans=25):
-        """
-        Generates motion for a full word.
-        Phase 1: Transition to the character.
-        Phase 2: Hold the character.
-        """
         self.model.eval()
-        
-        # Initial context: Start with the seed pose
-        # Motion needs to be [Batch=1, Frames=1, Feat=225]
-        # We apply the /0.5 scaling used in training
         generated_frames = (self.seed_pose.clone() / 0.5).unsqueeze(0).unsqueeze(0)
         
         for char in text:
-            # --- PHASE 1: TRANSITION TO TARGET ---
-            # Command: "Move towards this character"
+            char_idx = self.tokenizer.char2idx.get(char, self.tokenizer.char2idx[self.tokenizer.unk_token])
+            
             trans_tokens = torch.tensor(
-                self.tokenizer.tokenize(char, mode="trans")
+                [self.tokenizer.char2idx[self.tokenizer.sos_token], 
+                 self.tokenizer.char2idx[self.tokenizer.trans_mode]] + 
+                [char_idx] * 5 + 
+                [self.tokenizer.char2idx[self.tokenizer.eos_token]]
             ).unsqueeze(0).to(self.device)
             
             with torch.no_grad():
                 for _ in range(frames_per_trans):
-                    # Use last 30 frames as context window
-                    context = generated_frames[:, -30:, :]
-                    next_frame = self.model(trans_tokens, context)[:, -1:, :]
+                    output = self.model(trans_tokens, generated_frames[:, -30:, :])
+                    next_frame = output[:, -1:, :]
+                    next_frame[:, :, 99:102] = next_frame[:, :, 15*3:15*3+3]
+                    next_frame[:, :, 162:165] = next_frame[:, :, 16*3:16*3+3]
                     generated_frames = torch.cat([generated_frames, next_frame], dim=1)
 
-            # --- PHASE 2: SIGN HOLD ---
-            # Command: "Maintain the shape of this character"
             sign_tokens = torch.tensor(
-                self.tokenizer.tokenize(char, mode="sign")
+                [self.tokenizer.char2idx[self.tokenizer.sos_token], 
+                 self.tokenizer.char2idx[self.tokenizer.sign_mode]] + 
+                [char_idx] * 10 + 
+                [self.tokenizer.char2idx[self.tokenizer.eos_token]]
             ).unsqueeze(0).to(self.device)
             
             with torch.no_grad():
                 for _ in range(frames_per_sign):
-                    context = generated_frames[:, -30:, :]
-                    next_frame = self.model(sign_tokens, context)[:, -1:, :]
+                    output = self.model(sign_tokens, generated_frames[:, -30:, :])
+                    next_frame = output[:, -1:, :]
+                    next_frame[:, :, 99:102] = next_frame[:, :, 15*3:15*3+3]
+                    next_frame[:, :, 162:165] = next_frame[:, :, 16*3:16*3+3]
                     
-                    # During 'Hold', we slightly blend with the previous frame 
-                    # to prevent "floating" or "drifting"
                     stable_frame = (next_frame * 0.9) + (generated_frames[:, -1:, :] * 0.1)
                     generated_frames = torch.cat([generated_frames, stable_frame], dim=1)
 
-        # Remove the very first seed frame and scale back
         final_motion = generated_frames.squeeze(0)[1:].cpu().numpy()
-        final_motion = final_motion * 0.5 # Revert scaling
+        final_motion = final_motion * 0.5
         
         return self.smooth_motion(final_motion)
 

@@ -1,0 +1,14 @@
+{
+    "target_char": "छ",
+    "detected_char": "छ",
+    "overall_score": 68.77,
+    "accuracy_percentage": 97.07,
+    "status": "Needs Improvement",
+    "feedback": [
+        "Bend your Index finger slightly.",
+        "Bend your Middle finger slightly.",
+        "Bend your Ring finger more.",
+        "Bend your Pinky finger more."
+    ],
+    "timestamp_iso": "2026-02-17T13:26:04"
+}

@@ -17,8 +17,22 @@ from src.evaluation.logger import NSLLogger
 def calculate_finger_direction_loss(pred, target):
     p = pred.view(pred.shape[0], pred.shape[1], 75, 3)
     t = target.view(target.shape[0], target.shape[1], 75, 3)
-    # Target specific finger segments (mcp to tip)
-    segments = [(37,40), (41,44), (45,48), (49,52), (58,61), (62,65), (66,69), (70,73)]
+
+    segments = [
+        # --- LEFT HAND (33-53) ---
+        (37,38), (38,39), (39,40), 
+        (41,42), (42,43), (43,44),
+        (45,46), (46,47), (47,48), 
+        (49,50), (50,51), (51,52), 
+        (33,34), (34,35), (35,36), 
+    
+        # --- RIGHT HAND (54-74) ---
+        (58,59), (59,60), (60,61), 
+        (62,63), (63,64), (64,65),
+        (66,67), (67,68), (68,69), 
+        (70,71), (71,72), (72,73), 
+        (54,55), (55,56), (56,57)  
+    ]
     cos = nn.CosineSimilarity(dim=-1)
     total_dir_loss = 0
     for k, tip in segments:
@@ -36,7 +50,6 @@ def calculate_arm_hand_alignment_loss(pred, target, is_cropped_batch):
     p = pred[full_body_mask].view(-1, pred.shape[1], 75, 3)
     t = target[full_body_mask].view(-1, target.shape[1], 75, 3)
     
-    # Forearm vectors (Elbow to Wrist)
     p_lh_arm = p[:, :, 15, :] - p[:, :, 13, :]
     t_lh_arm = t[:, :, 15, :] - t[:, :, 13, :]
     p_rh_arm = p[:, :, 16, :] - p[:, :, 14, :]
@@ -48,7 +61,7 @@ def calculate_arm_hand_alignment_loss(pred, target, is_cropped_batch):
 def calculate_bone_consistency_loss(pred, target):
     p = pred.view(pred.shape[0], pred.shape[1], 75, 3)
     t = target.view(target.shape[0], target.shape[1], 75, 3)
-    # Define hand bones
+    
     lh_bones = [(33,34), (34,35), (37,38), (38,39), (41,42), (42,43), (45,46), (46,47), (49,50), (50,51)]
     rh_bones = [(54,55), (55,56), (58,59), (59,60), (62,63), (63,64), (66,67), (67,68), (70,71), (71,72)]
     
@@ -133,6 +146,14 @@ def train_model(config):
             
             # MASK OUT POSE LOSS FOR CROPPED DATA
             batch_weights[is_cropped_batch, :, :99] = 0.0
+
+            tips = [111, 112, 113, 123, 124, 125, 135, 136, 137, 147, 148, 149, 159, 160, 161]
+            for t_idx in tips:
+                batch_weights[:, :, t_idx] *= 2.0 
+            
+            rh_tips = [t + 63 for t in tips]
+            for t_idx in rh_tips:
+                batch_weights[:, :, t_idx] *= 2.0
             
             # --- LOSS CALCULATION ---
             l_pos = (criterion(output, tgt_expected) * batch_weights).mean()
@@ -142,20 +163,24 @@ def train_model(config):
             l_dir = calculate_finger_direction_loss(output, tgt_expected)
 
             # Total weighted loss
-            total_loss = l_pos + (5.0 * l_vel) + (10.0 * l_bone) + (5.0 * l_align) + (10.0 * l_dir)
+            total_loss = (
+                l_pos + 
+                (5.0 * l_vel) + 
+                (10.0 * l_bone) + 
+                (5.0 * l_align) + 
+                (15.0 * l_dir) 
+            )
             
             total_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
-            # Record for logging
             epoch_losses["pos"] += l_pos.item()
             epoch_losses["vel"] += l_vel.item()
             epoch_losses["bone"] += l_bone.item()
             epoch_losses["align"] += l_align.item()
             epoch_losses["dir"] += l_dir.item()
 
-        # Validation
         model.eval()
         val_loss = 0
         with torch.no_grad():
@@ -166,7 +191,6 @@ def train_model(config):
 
         avg_val = val_loss / len(val_loader)
         
-        # LOGGING
         num_batches = len(train_loader)
         logger.log_epoch(
             epoch + 1, 

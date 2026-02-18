@@ -79,3 +79,12 @@ training:
   model_save_path: "experiments/best_model.pth"
   checkpoint_dir: "experiments"
   early_stopping_patience: 50
+
+rec_training:
+  batch_size: 32
+  epochs: 1000
+  learning_rate: 1e-4   
+  checkpoint_dir: "experiments/recognition"
+  model_save_path: "experiments/recognition/best_recognizer.pth"
+  early_stopping_patience: 100
+  val_signer: "S3" 
