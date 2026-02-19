@@ -4,7 +4,8 @@ from pathlib import Path
 from src.models.motion_transformer import NSLTransformer
 from src.data_preprocessing.tokenizer import NSLTokenizer
 import pandas as pd
-from scipy.signal import savgol_filter
+
+from src.generation.euro_filter import OneEuroFilter
 
 class NSLGenerator:
     def __init__(self, model_path, vocab_path, device=None):
@@ -19,13 +20,21 @@ class NSLGenerator:
 
         self.seed_pose = self.load_default_seed()
 
-    def smooth_motion(self, motion, window_size=7, poly_order=2):
-        """Reduces jitter while preserving the 'snap' of the sign."""
-        if motion.shape[0] <= window_size:
+    def smooth_motion(self, motion):
+        """
+        Applies One-Euro Filtering to the generated motion sequence.
+        motion: [Frames, 225]
+        """
+        if motion.shape[0] < 2:
             return motion
+        f = OneEuroFilter(0, motion[0], min_cutoff=0.1, beta=0.05)
+        
         smoothed = np.zeros_like(motion)
-        for i in range(motion.shape[1]):
-            smoothed[:, i] = savgol_filter(motion[:, i], window_size, poly_order)
+        smoothed[0] = motion[0]
+        
+        for i in range(1, motion.shape[0]):
+            smoothed[i] = f(i, motion[i])
+            
         return smoothed
 
     def load_default_seed(self):
@@ -54,14 +63,19 @@ class NSLGenerator:
         except Exception as e:
             print(f"Seed loading failed ({e}), using zero seed.")
             return torch.zeros(225).to(self.device)
-
-    def generate(self, text, frames_per_sign=60, frames_per_trans=25):
+    
+    def generate(self, text, frames_per_sign=60, frames_per_trans=30, final_hold_duration=45):
         self.model.eval()
-        generated_frames = (self.seed_pose.clone() / 0.5).unsqueeze(0).unsqueeze(0)
         
-        for char in text:
+        # --- 1. PRIMING (Context Warm-up) ---
+        # Filling the context window with 30 frames of the seed pose to prevent start-of-video snapping.
+        seed_frame = (self.seed_pose.clone() / 0.5).unsqueeze(0).unsqueeze(0)
+        generated_frames = seed_frame.repeat(1, 30, 1) 
+        
+        for i, char in enumerate(text):
             char_idx = self.tokenizer.char2idx.get(char, self.tokenizer.char2idx[self.tokenizer.unk_token])
             
+            # --- 2. PHASE 1: TRANSITION ---
             trans_tokens = torch.tensor(
                 [self.tokenizer.char2idx[self.tokenizer.sos_token], 
                  self.tokenizer.char2idx[self.tokenizer.trans_mode]] + 
@@ -73,10 +87,14 @@ class NSLGenerator:
                 for _ in range(frames_per_trans):
                     output = self.model(trans_tokens, generated_frames[:, -30:, :])
                     next_frame = output[:, -1:, :]
+                    
+                    # Tethering to prevent "dot-snapping"
                     next_frame[:, :, 99:102] = next_frame[:, :, 15*3:15*3+3]
                     next_frame[:, :, 162:165] = next_frame[:, :, 16*3:16*3+3]
+                    
                     generated_frames = torch.cat([generated_frames, next_frame], dim=1)
 
+            # --- 3. PHASE 2: SIGN HOLD ---
             sign_tokens = torch.tensor(
                 [self.tokenizer.char2idx[self.tokenizer.sos_token], 
                  self.tokenizer.char2idx[self.tokenizer.sign_mode]] + 
@@ -88,25 +106,54 @@ class NSLGenerator:
                 for _ in range(frames_per_sign):
                     output = self.model(sign_tokens, generated_frames[:, -30:, :])
                     next_frame = output[:, -1:, :]
+                    
                     next_frame[:, :, 99:102] = next_frame[:, :, 15*3:15*3+3]
                     next_frame[:, :, 162:165] = next_frame[:, :, 16*3:16*3+3]
-                    
-                    stable_frame = (next_frame * 0.9) + (generated_frames[:, -1:, :] * 0.1)
+
+                    # Standard Momentum Blending
+                    recent_avg = generated_frames[:, -3:, :].mean(dim=1, keepdim=True)
+                    stable_frame = (next_frame * 0.8) + (recent_avg * 0.2)
                     generated_frames = torch.cat([generated_frames, stable_frame], dim=1)
 
-        final_motion = generated_frames.squeeze(0)[1:].cpu().numpy()
+        # --- 4. PHASE 3: EXTENDED FINAL HOLD ---
+        # This executes AFTER the main word is finished. 
+        # It takes the very last character and forces the model to stay in that pose.
+        last_char = text[-1]
+        last_char_idx = self.tokenizer.char2idx.get(last_char, self.tokenizer.char2idx[self.tokenizer.unk_token])
+        
+        final_hold_tokens = torch.tensor(
+            [self.tokenizer.char2idx[self.tokenizer.sos_token], 
+             self.tokenizer.char2idx[self.tokenizer.sign_mode]] + 
+            [last_char_idx] * 15 + # Even more tokens for absolute focus
+            [self.tokenizer.char2idx[self.tokenizer.eos_token]]
+        ).unsqueeze(0).to(self.device)
+
+        with torch.no_grad():
+            for _ in range(final_hold_duration):
+                output = self.model(final_hold_tokens, generated_frames[:, -30:, :])
+                next_frame = output[:, -1:, :]
+                
+                next_frame[:, :, 99:102] = next_frame[:, :, 15*3:15*3+3]
+                next_frame[:, :, 162:165] = next_frame[:, :, 16*3:16*3+3]
+
+                # High stability blending (0.5/0.5) to make the final pose rock-solid
+                last_frame = generated_frames[:, -1:, :]
+                very_stable_frame = (next_frame * 0.5) + (last_frame * 0.5)
+                
+                generated_frames = torch.cat([generated_frames, very_stable_frame], dim=1)
+
+        # --- 5. CLEANUP ---
+        # Remove the 30 priming frames from the start
+        final_motion = generated_frames.squeeze(0)[30:].cpu().numpy()
         final_motion = final_motion * 0.5
         
         return self.smooth_motion(final_motion)
 
     def save_to_npz(self, keypoints, output_path):
-        # Reshape for Unity/Blender or Visualization tools
         pose = keypoints[:, :99].reshape(-1, 33, 3)
         lh = keypoints[:, 99:162].reshape(-1, 21, 3)
         rh = keypoints[:, 162:].reshape(-1, 21, 3)
         
-        # IMPORTANT: Remember hands were scaled by 5.0 during training
-        # We must divide by 5.0 to get back to standard Mediapipe coordinates
         lh = lh / 5.0
         rh = rh / 5.0
         
