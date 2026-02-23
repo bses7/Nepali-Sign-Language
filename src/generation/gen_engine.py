@@ -100,14 +100,44 @@ def train_model(config):
     val_loader = DataLoader(val_ds, batch_size=config['training']['batch_size'], shuffle=False, collate_fn=nsl_collate_fn)
 
     model = NSLTransformer(vocab_size=len(tokenizer.vocab)).to(device)
+
+    is_fine_tuning = False
+    current_lr = float(config['training']['learning_rate'])
     
     if save_path.exists():
-        print("🔄 Resuming training...")
-        checkpoint = torch.load(save_path)
+        print(f"🔍 Found existing model at {save_path}. Initializing Fine-Tuning mode...")
+        checkpoint = torch.load(save_path, map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
 
+        fine_tune_lr_factor = config['training'].get('fine_tune_factor', 0.1)
+        current_lr = current_lr * fine_tune_lr_factor
+        is_fine_tuning = True
+
+        if config['training'].get('freeze_encoder', False):
+            print("❄️ Freezing Text Path and Transformer Encoder...")
+            
+            for param in model.embedding.parameters():
+                param.requires_grad = False
+            
+            for param in model.text_encoder.parameters():
+                param.requires_grad = False
+                
+            for param in model.transformer.encoder.parameters():
+                param.requires_grad = False
+                
+            print("✅ Frozen: embedding, text_encoder, and transformer.encoder")
+            print("🔥 Trainable: motion_projection, transformer.decoder, and output_layer")
+            
+        print(f"🚀 Fine-tuning started with LR: {current_lr}")
+    else:
+        print("🆕 No checkpoint found. Starting training from scratch.")
+
     criterion = nn.MSELoss(reduction='none')
-    optimizer = optim.AdamW(model.parameters(), lr=float(config['training']['learning_rate']), weight_decay=1e-4)
+    optimizer = optim.AdamW(
+        filter(lambda p: p.requires_grad, model.parameters()), 
+        lr=current_lr, 
+        weight_decay=1e-4
+    )
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=15, factor=0.5)
     
     best_val_loss = float('inf')
@@ -122,12 +152,11 @@ def train_model(config):
             src, tgt = batch['token_ids'].to(device), batch['features'].to(device)
             is_cropped_batch = batch['is_cropped'].to(device)
             
-            # Shift for teacher forcing
             tgt_input, tgt_expected = tgt[:, :-1, :], tgt[:, 1:, :]
 
-            # Scheduled Noise: Help model handle its own errors
             if epoch > 5:
-                noise_lvl = min(0.005, 0.0001 * epoch)
+                noise_scale = 0.00005 if is_fine_tuning else 0.0001
+                noise_lvl = min(0.005, noise_scale * epoch)
                 tgt_input = tgt_input + torch.randn_like(tgt_input) * noise_lvl
             
             optimizer.zero_grad()
@@ -138,22 +167,22 @@ def train_model(config):
             
             for i, t_type in enumerate(batch['types']):
                 if t_type == 'sign':
-                    batch_weights[i, :, :99] = 2.0   # Pose importance
-                    batch_weights[i, :, 99:] = 20.0  # Hand shape importance (High!)
+                    batch_weights[i, :, :99] = 1.0   # Pose importance
+                    batch_weights[i, :, 99:] = 40.0  # Hand shape importance (High!)
                 else: # Transition
-                    batch_weights[i, :, :99] = 10.0  # Movement importance
-                    batch_weights[i, :, 99:] = 5.0   # Hand shape less critical during move
+                    batch_weights[i, :, :99] = 2.0  # Movement importance
+                    batch_weights[i, :, 99:] = 1.0   # Hand shape less critical during move
             
             # MASK OUT POSE LOSS FOR CROPPED DATA
             batch_weights[is_cropped_batch, :, :99] = 0.0
 
             tips = [111, 112, 113, 123, 124, 125, 135, 136, 137, 147, 148, 149, 159, 160, 161]
             for t_idx in tips:
-                batch_weights[:, :, t_idx] *= 2.0 
+                batch_weights[:, :, t_idx] *= 6.0 
             
             rh_tips = [t + 63 for t in tips]
             for t_idx in rh_tips:
-                batch_weights[:, :, t_idx] *= 2.0
+                batch_weights[:, :, t_idx] *= 6.0
             
             # --- LOSS CALCULATION ---
             l_pos = (criterion(output, tgt_expected) * batch_weights).mean()
@@ -210,8 +239,14 @@ def train_model(config):
         if avg_val < best_val_loss:
             best_val_loss = avg_val
             early_stop_counter = 0
-            torch.save({'model_state_dict': model.state_dict(), 'vocab_size': len(tokenizer.vocab)}, save_path)
-            print("⭐ Model Saved")
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(), 
+                'optimizer_state_dict': optimizer.state_dict(), 
+                'vocab_size': len(tokenizer.vocab),
+                'loss': best_val_loss
+            }, save_path)
+            print("⭐ Model Saved (Improved)")
         else:
             early_stop_counter += 1
             if early_stop_counter >= patience:

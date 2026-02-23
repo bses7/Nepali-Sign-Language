@@ -17,9 +17,9 @@ mediapipe:
   use_face: false
 
 processing:
-  fps_target: 60 
-  frame_skip: 1 
-  normalize: true 
+  fps_target: 60
+  frame_skip: 1
+  normalize: true
   cropped_identifiers: ["Cropped"]
   label_map:
     "A": "अ"
@@ -75,16 +75,18 @@ processing:
 training:
   batch_size: 32
   epochs: 1000
-  learning_rate: 1e-4
+  learning_rate: 1e-5
   model_save_path: "experiments/best_model.pth"
   checkpoint_dir: "experiments"
   early_stopping_patience: 50
+  fine_tune_factor: 0.1
+  freeze_encoder: true
 
 rec_training:
   batch_size: 32
   epochs: 1000
-  learning_rate: 1e-4   
+  learning_rate: 1e-4
   checkpoint_dir: "experiments/recognition"
   model_save_path: "experiments/recognition/best_recognizer.pth"
   early_stopping_patience: 100
-  val_signer: "S3" 
+  val_signer: "S3"

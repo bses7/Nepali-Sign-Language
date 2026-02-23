@@ -44,7 +44,7 @@ class NSLGenerator:
             # Looking for a non-cropped sign to get full body context
             csv_path = Path("training_dataset/master_metadata.csv")
             df = pd.read_csv(csv_path)
-            sample_row = df[df['is_cropped'] == False].iloc[0]
+            sample_row = df[df['is_cropped'] == False].iloc[39]
             npz_path = Path("training_dataset") / sample_row['relative_path']
             data = np.load(npz_path)
             
