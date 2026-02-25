@@ -167,22 +167,22 @@ def train_model(config):
             
             for i, t_type in enumerate(batch['types']):
                 if t_type == 'sign':
-                    batch_weights[i, :, :99] = 1.0   # Pose importance
-                    batch_weights[i, :, 99:] = 40.0  # Hand shape importance (High!)
+                    batch_weights[i, :, :99] = 5.0   # Pose importance
+                    batch_weights[i, :, 99:] = 20.0  # Hand shape importance (High!)
                 else: # Transition
-                    batch_weights[i, :, :99] = 2.0  # Movement importance
-                    batch_weights[i, :, 99:] = 1.0   # Hand shape less critical during move
+                    batch_weights[i, :, :99] = 10.0  # Movement importance
+                    batch_weights[i, :, 99:] = 5.0   # Hand shape less critical during move
             
             # MASK OUT POSE LOSS FOR CROPPED DATA
             batch_weights[is_cropped_batch, :, :99] = 0.0
 
             tips = [111, 112, 113, 123, 124, 125, 135, 136, 137, 147, 148, 149, 159, 160, 161]
             for t_idx in tips:
-                batch_weights[:, :, t_idx] *= 6.0 
+                batch_weights[:, :, t_idx] *= 2.0 
             
             rh_tips = [t + 63 for t in tips]
             for t_idx in rh_tips:
-                batch_weights[:, :, t_idx] *= 6.0
+                batch_weights[:, :, t_idx] *= 2.0
             
             # --- LOSS CALCULATION ---
             l_pos = (criterion(output, tgt_expected) * batch_weights).mean()
@@ -197,7 +197,7 @@ def train_model(config):
                 (5.0 * l_vel) + 
                 (10.0 * l_bone) + 
                 (5.0 * l_align) + 
-                (15.0 * l_dir) 
+                (25.0 * l_dir) 
             )
             
             total_loss.backward()
