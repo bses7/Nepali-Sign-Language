@@ -2,11 +2,18 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.user import User as UserModel
-from app.schemas.user import User, UserCreate
+from app.schemas.user import LeaderboardOut, User, UserCreate
 from app.core.security import get_password_hash
 
 from app.api.deps import get_current_user
 from app.models.gamification import UserStats as StatsModel
+from app.schemas.user import DashboardOut
+from app.services import user_service
+
+from app.models.lesson import Avatar as AvatarModel
+from app.schemas.gamification import Badge as BadgeSchema
+from app.services import gamification_service
+
 
 router = APIRouter()
 
@@ -33,7 +40,16 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     db.flush()
 
-    new_stats = StatsModel(user_id=db_user.id, xp=0, level=1)
+    default_avatar = db.query(AvatarModel).filter(AvatarModel.folder_name == "avatar").first()
+    default_avatar_id = default_avatar.id if default_avatar else None
+
+    new_stats = StatsModel(
+        user_id=db_user.id, 
+        xp=0, 
+        level=1, 
+        coins=0,
+        current_avatar_id=default_avatar_id 
+    )
     db.add(new_stats)
 
     db.commit()
@@ -47,3 +63,29 @@ def read_user_me(current_user: UserModel = Depends(get_current_user)):
     """
     return current_user
 
+@router.get("/dashboard", response_model=DashboardOut)
+def get_dashboard(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all stats needed for the Student Dashboard.
+    """
+    user_service.update_streak(db, current_user.stats)
+
+    return user_service.get_dashboard_data(db, current_user)
+
+@router.get("/leaderboard", response_model=LeaderboardOut)
+def read_leaderboard(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user) # Only logged in users see it
+):
+    """
+    Get the top 10 players by XP.
+    """
+    return user_service.get_leaderboard(db)
+
+@router.get("/badges", response_model=list[BadgeSchema])
+def get_my_badges(current_user: User = Depends(get_current_user)):
+    """View all earned badges."""
+    return current_user.badges

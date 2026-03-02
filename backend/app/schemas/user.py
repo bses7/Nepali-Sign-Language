@@ -46,3 +46,29 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordConfirm(BaseModel):
     token: str
     new_password: str = Field(..., min_length=8, max_length=128)
+
+class DashboardOut(BaseModel):
+    first_name: str
+    last_name: str
+    role: str
+    
+    xp: int
+    level: int
+    streak_count: int
+    
+    total_signs: int
+    completed_signs: int
+    progress_percentage: float
+
+    equipped_avatar_id: Optional[int]
+    equipped_avatar_folder: Optional[str]
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class LeaderboardUser(BaseModel):
+    first_name: str
+    xp: int
+    level: int
+
+class LeaderboardOut(BaseModel):
+    top_users: list[LeaderboardUser]

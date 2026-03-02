@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.core.config import settings
-from app.api.v1.endpoints import users  
+from app.api.v1.endpoints import avatars, users  
 from app.api.v1.endpoints import users, auth, lessons
 
 from fastapi.staticfiles import StaticFiles
@@ -11,6 +11,7 @@ app = FastAPI(title=settings.PROJECT_NAME)
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(lessons.router, prefix="/api/v1/lessons", tags=["lessons"])
+app.include_router(avatars.router, prefix="/api/v1/avatars", tags=["avatars"])
 
 @app.get("/")
 def read_root():

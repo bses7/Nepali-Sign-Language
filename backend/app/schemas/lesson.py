@@ -6,6 +6,8 @@ class Avatar(BaseModel):
     id: int
     name: str
     folder_name: str 
+    price: int
+    is_owned: bool = False
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -24,3 +26,15 @@ class LessonOut(BaseModel):
 
 class LessonComplete(BaseModel):
     sign_id: int
+
+class SignDetail(BaseModel):
+    id: int
+    title: str
+    nepali_char: str
+    category: str
+    difficulty: str
+    model_url: str     
+    animation_name: str 
+    description: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)

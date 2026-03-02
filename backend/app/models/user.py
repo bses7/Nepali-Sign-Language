@@ -26,6 +26,7 @@ class User(Base):
     is_superuser = Column(Boolean, default=False) 
 
     stats = relationship("UserStats", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    badges = relationship("Badge", secondary="user_badges", back_populates="users")
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
