@@ -1,162 +1,120 @@
 import torch
 import numpy as np
 from pathlib import Path
+from scipy.ndimage import gaussian_filter1d
+
 from src.models.motion_transformer import NSLTransformer
 from src.data_preprocessing.tokenizer import NSLTokenizer
-import pandas as pd
-
-from src.generation.euro_filter import OneEuroFilter
 
 class NSLGenerator:
     def __init__(self, model_path, vocab_path, device=None):
         self.device = device if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        # 1. Load Tokenizer
         self.tokenizer = NSLTokenizer()
         self.tokenizer.load_vocab(vocab_path)
         
+        # 2. Load Checkpoint and Model
         checkpoint = torch.load(model_path, map_location=self.device)
-        self.model = NSLTransformer(vocab_size=checkpoint['vocab_size']).to(self.device)
+        
+        # Checkpoint usually stores these, otherwise use defaults
+        v_size = checkpoint.get('vocab_size', len(self.tokenizer.vocab))
+        f_dim = checkpoint.get('feature_dim', 231) 
+        
+        self.model = NSLTransformer(vocab_size=v_size, feature_dim=f_dim).to(self.device)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.model.eval()
-
-        self.seed_pose = self.load_default_seed()
-
-    def smooth_motion(self, motion):
-        """
-        Applies One-Euro Filtering to the generated motion sequence.
-        motion: [Frames, 225]
-        """
-        if motion.shape[0] < 2:
-            return motion
-        f = OneEuroFilter(0, motion[0], min_cutoff=0.1, beta=0.05)
         
-        smoothed = np.zeros_like(motion)
-        smoothed[0] = motion[0]
-        
-        for i in range(1, motion.shape[0]):
-            smoothed[i] = f(i, motion[i])
-            
-        return smoothed
+        self.feature_dim = f_dim
+        print(f"✅ NSL Generator Initialized. Vocab: {v_size}, Features: {f_dim}")
 
-    def load_default_seed(self):
-        """Returns a neutral shoulder-centered T-pose or first frame of data."""
-        try:
-            # We want a starting pose where arms are at sides or neutral
-            # Looking for a non-cropped sign to get full body context
-            csv_path = Path("training_dataset/master_metadata.csv")
-            df = pd.read_csv(csv_path)
-            sample_row = df[df['is_cropped'] == False].iloc[39]
-            npz_path = Path("training_dataset") / sample_row['relative_path']
-            data = np.load(npz_path)
-            
-            pose = data['pose'][0, :, :3].flatten()
-            lh = data['lh'][0].flatten() * 5.0 
-            rh = data['rh'][0].flatten() * 5.0
-            
-            # Center to shoulder midpoint (just like utils.py)
-            mid_x = (pose[11*3] + pose[12*3]) / 2
-            mid_y = (pose[11*3+1] + pose[12*3+1]) / 2
-            for c in range(0, 99, 3):
-                pose[c] -= mid_x
-                pose[c+1] -= mid_y
+    def _generate_segment(self, text, mode="sign", seed_frames=None, max_frames=None):
+        """Internal helper to generate a block of motion."""
+        tokens = torch.tensor(self.tokenizer.tokenize(text, mode=mode)).unsqueeze(0).to(self.device)
+        
+        if max_frames is None:
+            max_frames = 40 if mode == "sign" else 15
 
-            return torch.tensor(np.concatenate([pose, lh, rh]), dtype=torch.float32).to(self.device)
-        except Exception as e:
-            print(f"Seed loading failed ({e}), using zero seed.")
-            return torch.zeros(225).to(self.device)
-    
-    def generate(self, text, frames_per_sign=60, frames_per_trans=30, final_hold_duration=45):
-        self.model.eval()
-        
-        # --- 1. PRIMING (Context Warm-up) ---
-        # Filling the context window with 30 frames of the seed pose to prevent start-of-video snapping.
-        seed_frame = (self.seed_pose.clone() / 0.5).unsqueeze(0).unsqueeze(0)
-        generated_frames = seed_frame.repeat(1, 30, 1) 
-        
-        for i, char in enumerate(text):
-            char_idx = self.tokenizer.char2idx.get(char, self.tokenizer.char2idx[self.tokenizer.unk_token])
-            
-            # --- 2. PHASE 1: TRANSITION ---
-            trans_tokens = torch.tensor(
-                [self.tokenizer.char2idx[self.tokenizer.sos_token], 
-                 self.tokenizer.char2idx[self.tokenizer.trans_mode]] + 
-                [char_idx] * 5 + 
-                [self.tokenizer.char2idx[self.tokenizer.eos_token]]
-            ).unsqueeze(0).to(self.device)
-            
+        # If no seed (start of word), start with a neutral zero frame
+        if seed_frames is None:
+            generated = torch.zeros((1, 1, self.feature_dim)).to(self.device)
+        else:
+            generated = seed_frames # Shape [1, 1, feature_dim]
+
+        output_frames = []
+
+        for _ in range(max_frames):
             with torch.no_grad():
-                for _ in range(frames_per_trans):
-                    output = self.model(trans_tokens, generated_frames[:, -30:, :])
-                    next_frame = output[:, -1:, :]
-                    
-                    # Tethering to prevent "dot-snapping"
-                    next_frame[:, :, 99:102] = next_frame[:, :, 15*3:15*3+3]
-                    next_frame[:, :, 162:165] = next_frame[:, :, 16*3:16*3+3]
-                    
-                    generated_frames = torch.cat([generated_frames, next_frame], dim=1)
+                # Use history context for the transformer decoder
+                input_seq = generated[:, -60:, :]
+                preds = self.model(tokens, input_seq)
+                
+                # Take the latest predicted frame
+                next_frame = preds[:, -1:, :]
+                
+                output_frames.append(next_frame)
+                generated = torch.cat([generated, next_frame], dim=1)
 
-            # --- 3. PHASE 2: SIGN HOLD ---
-            sign_tokens = torch.tensor(
-                [self.tokenizer.char2idx[self.tokenizer.sos_token], 
-                 self.tokenizer.char2idx[self.tokenizer.sign_mode]] + 
-                [char_idx] * 10 + 
-                [self.tokenizer.char2idx[self.tokenizer.eos_token]]
-            ).unsqueeze(0).to(self.device)
+        return torch.cat(output_frames, dim=1)
+
+    def generate(self, user_input, smooth=True):
+        """
+        The main method called by main.py. 
+        Generates a full sequence of signs and transitions for a Nepali word.
+        """
+        chars = list(user_input)
+        all_segments = []
+        last_frame = None
+
+        for i, char in enumerate(chars):
+            # 1. Generate the Sign (Static character shape)
+            sign_frames = self._generate_segment(char, mode="sign", seed_frames=last_frame)
+            all_segments.append(sign_frames)
             
-            with torch.no_grad():
-                for _ in range(frames_per_sign):
-                    output = self.model(sign_tokens, generated_frames[:, -30:, :])
-                    next_frame = output[:, -1:, :]
-                    
-                    next_frame[:, :, 99:102] = next_frame[:, :, 15*3:15*3+3]
-                    next_frame[:, :, 162:165] = next_frame[:, :, 16*3:16*3+3]
+            # Seed the next transition with the last frame of this sign
+            last_frame = sign_frames[:, -1:, :]
 
-                    # Standard Momentum Blending
-                    recent_avg = generated_frames[:, -3:, :].mean(dim=1, keepdim=True)
-                    stable_frame = (next_frame * 0.8) + (recent_avg * 0.2)
-                    generated_frames = torch.cat([generated_frames, stable_frame], dim=1)
-
-        # --- 4. PHASE 3: EXTENDED FINAL HOLD ---
-        # This executes AFTER the main word is finished. 
-        # It takes the very last character and forces the model to stay in that pose.
-        last_char = text[-1]
-        last_char_idx = self.tokenizer.char2idx.get(last_char, self.tokenizer.char2idx[self.tokenizer.unk_token])
-        
-        final_hold_tokens = torch.tensor(
-            [self.tokenizer.char2idx[self.tokenizer.sos_token], 
-             self.tokenizer.char2idx[self.tokenizer.sign_mode]] + 
-            [last_char_idx] * 15 + # Even more tokens for absolute focus
-            [self.tokenizer.char2idx[self.tokenizer.eos_token]]
-        ).unsqueeze(0).to(self.device)
-
-        with torch.no_grad():
-            for _ in range(final_hold_duration):
-                output = self.model(final_hold_tokens, generated_frames[:, -30:, :])
-                next_frame = output[:, -1:, :]
+            # 2. Generate the Transition (Movement to the next character)
+            if i < len(chars) - 1:
+                next_char = chars[i+1]
+                # Pass both chars so the model knows Start and End context
+                trans_text = char + next_char 
                 
-                next_frame[:, :, 99:102] = next_frame[:, :, 15*3:15*3+3]
-                next_frame[:, :, 162:165] = next_frame[:, :, 16*3:16*3+3]
-
-                # High stability blending (0.5/0.5) to make the final pose rock-solid
-                last_frame = generated_frames[:, -1:, :]
-                very_stable_frame = (next_frame * 0.5) + (last_frame * 0.5)
+                trans_frames = self._generate_segment(trans_text, mode="trans", seed_frames=last_frame)
+                all_segments.append(trans_frames)
                 
-                generated_frames = torch.cat([generated_frames, very_stable_frame], dim=1)
+                # Seed the next sign with the last frame of this transition
+                last_frame = trans_frames[:, -1:, :]
 
-        # --- 5. CLEANUP ---
-        # Remove the 30 priming frames from the start
-        final_motion = generated_frames.squeeze(0)[30:].cpu().numpy()
-        final_motion = final_motion * 0.5
-        
-        return self.smooth_motion(final_motion)
+        # Combine all tensors into one numpy array [Total_Frames, 231]
+        full_motion = torch.cat(all_segments, dim=1).squeeze(0).cpu().numpy()
 
-    def save_to_npz(self, keypoints, output_path):
-        pose = keypoints[:, :99].reshape(-1, 33, 3)
-        lh = keypoints[:, 99:162].reshape(-1, 21, 3)
-        rh = keypoints[:, 162:].reshape(-1, 21, 3)
-        
-        lh = lh / 5.0
-        rh = rh / 5.0
-        
+        # Gaussian Smoothing: Blurs the joins between signs/transitions for fluid movement
+        if smooth:
+            full_motion = gaussian_filter1d(full_motion, sigma=1.2, axis=0)
+
+        return full_motion
+
+    def save_to_npz(self, motion_data, output_path):
+        """
+        The method called by main.py to save the results.
+        Splits the 231-dim vector back into Pose, Hands, and Meta.
+        """
+        # Ensure the output directory exists
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        np.savez_compressed(output_path, pose=pose, lh=lh, rh=rh)
-        print(f"💾 Motion generated and saved to {output_path}")
+
+        pose = motion_data[:, :99].reshape(-1, 33, 3)
+        lh = motion_data[:, 99:162].reshape(-1, 21, 3)
+        rh = motion_data[:, 162:225].reshape(-1, 21, 3)
+        lh_meta = motion_data[:, 225:228]
+        rh_meta = motion_data[:, 228:231]
+
+        np.savez(
+            output_path,
+            pose=pose, 
+            lh=lh, 
+            rh=rh,
+            lh_meta=lh_meta, 
+            rh_meta=rh_meta
+        )
+        print(f"💾 Generated NPZ saved to: {output_path}")

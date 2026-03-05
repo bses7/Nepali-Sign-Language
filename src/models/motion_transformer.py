@@ -16,11 +16,14 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, :x.size(1)]
 
 class NSLTransformer(nn.Module):
-    def __init__(self, vocab_size, feature_dim=225, d_model=512, nhead=8, num_layers=6, dropout=0.1):
+    def __init__(self, vocab_size, feature_dim=231, d_model=512, nhead=8, num_layers=6, dropout=0.1):
+        """
+        NSL Transformer updated for 231-dim features:
+        99 (Pose) + 63 (LH) + 63 (RH) + 3 (LH Wrist Meta) + 3 (RH Wrist Meta)
+        """
         super().__init__()
         self.d_model = d_model
         
-        # 1. Text Encoding Path
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.text_encoder = nn.Sequential(
             nn.Linear(d_model, d_model),
@@ -28,9 +31,8 @@ class NSLTransformer(nn.Module):
             nn.ReLU(),
             nn.Dropout(dropout)
         )
-        
-        # 2. Motion Encoding Path
-        # Added an MLP for motion projection to capture joint relationships better
+
+        # Maps 231 features into the transformer's d_model space
         self.motion_projection = nn.Sequential(
             nn.Linear(feature_dim, d_model),
             nn.LayerNorm(d_model),
@@ -41,8 +43,6 @@ class NSLTransformer(nn.Module):
         
         self.pos_encoder = PositionalEncoding(d_model)
 
-        # 3. The Core Transformer
-        # Increased feedforward dim to 2048 for better 'memory' of complex hand shapes
         self.transformer = nn.Transformer(
             d_model=d_model,
             nhead=nhead,
@@ -51,11 +51,10 @@ class NSLTransformer(nn.Module):
             dim_feedforward=2048, 
             dropout=dropout,     
             batch_first=True,
-            activation='gelu' # GELU often performs better for regression
+            activation='gelu'
         )
         
-        # 4. Final Output Projection
-        # Predicts the NEXT frame keypoints
+        # Maps transformer output back to 231 features
         self.output_layer = nn.Sequential(
             nn.Linear(d_model, d_model),
             nn.ReLU(),
@@ -64,29 +63,25 @@ class NSLTransformer(nn.Module):
 
     def forward(self, src_tokens, tgt_motion):
         """
-        src_tokens: [Batch, Text_Len] (e.g., [SOS, <SIGN>, क, EOS])
-        tgt_motion: [Batch, Frame_Len, 225]
+        src_tokens: [Batch, Text_Len] (e.g., [SOS, "क", <TRANS>, "ख", EOS])
+        tgt_motion: [Batch, Frame_Len, 231]
         """
-        # Encode Text (Source)
         src = self.embedding(src_tokens) * math.sqrt(self.d_model)
         src = self.text_encoder(src)
         src = self.pos_encoder(src)
         
-        # Encode Motion (Target)
         tgt = self.motion_projection(tgt_motion)
         tgt = self.pos_encoder(tgt)
         
-        # Masks
         tgt_mask = self.transformer.generate_square_subsequent_mask(tgt.size(1)).to(tgt.device)
-        src_key_padding_mask = (src_tokens == 0) # Assumes <PAD> is 0
+        src_key_padding_mask = (src_tokens == 0) 
         
-        # Transformer Pass
         output = self.transformer(
             src, 
             tgt, 
             tgt_mask=tgt_mask, 
             src_key_padding_mask=src_key_padding_mask,
-            tgt_key_padding_mask=None, # Usually motion is not padded in a way that needs masking
+            tgt_key_padding_mask=None, 
             memory_key_padding_mask=src_key_padding_mask
         )
         
@@ -94,8 +89,6 @@ class NSLTransformer(nn.Module):
 
     def generate_step(self, src_tokens, current_motion):
         """Helper for inference to generate one frame at a time."""
-        # This prevents re-encoding the text encoder every single frame
-        # (Optimized for gen_inference.py)
         with torch.no_grad():
             output = self.forward(src_tokens, current_motion)
-            return output[:, -1:, :] # Return only the newly predicted frame
+            return output[:, -1:, :]

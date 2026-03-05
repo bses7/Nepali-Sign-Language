@@ -15,22 +15,22 @@ from src.evaluation.logger import NSLLogger
 # --- Loss Function Enhancements ---
 
 def calculate_finger_direction_loss(pred, target):
-    p = pred.view(pred.shape[0], pred.shape[1], 75, 3)
-    t = target.view(target.shape[0], target.shape[1], 75, 3)
+    """
+    Calculates if the fingers are pointing in the correct direction.
+    Updated view: 231 dims / 3 = 77 triplets (X, Y, Z)
+    """
+    # Points 33-53 are LH, 54-74 are RH
+    p = pred.view(pred.shape[0], pred.shape[1], 77, 3)
+    t = target.view(target.shape[0], target.shape[1], 77, 3)
 
     segments = [
         # --- LEFT HAND (33-53) ---
-        (37,38), (38,39), (39,40), 
-        (41,42), (42,43), (43,44),
-        (45,46), (46,47), (47,48), 
-        (49,50), (50,51), (51,52), 
+        (37,38), (38,39), (39,40), (41,42), (42,43), (43,44),
+        (45,46), (46,47), (47,48), (49,50), (50,51), (51,52), 
         (33,34), (34,35), (35,36), 
-    
         # --- RIGHT HAND (54-74) ---
-        (58,59), (59,60), (60,61), 
-        (62,63), (63,64), (64,65),
-        (66,67), (67,68), (68,69), 
-        (70,71), (71,72), (72,73), 
+        (58,59), (59,60), (60,61), (62,63), (63,64), (64,65),
+        (66,67), (67,68), (68,69), (70,71), (71,72), (72,73), 
         (54,55), (55,56), (56,57)  
     ]
     cos = nn.CosineSimilarity(dim=-1)
@@ -38,18 +38,20 @@ def calculate_finger_direction_loss(pred, target):
     for k, tip in segments:
         p_vec = p[:, :, tip, :] - p[:, :, k, :]
         t_vec = t[:, :, tip, :] - t[:, :, k, :]
+        # 1.0 - cosine similarity (0 is perfect match)
         total_dir_loss += (1.0 - cos(p_vec, t_vec).mean())
     return total_dir_loss
 
 def calculate_arm_hand_alignment_loss(pred, target, is_cropped_batch):
-    """Only calculate alignment if full body is available."""
+    """Ensures the hand is attached correctly to the arm vector."""
     full_body_mask = ~is_cropped_batch
     if not full_body_mask.any():
         return torch.tensor(0.0).to(pred.device)
     
-    p = pred[full_body_mask].view(-1, pred.shape[1], 75, 3)
-    t = target[full_body_mask].view(-1, target.shape[1], 75, 3)
+    p = pred[full_body_mask].view(-1, pred.shape[1], 77, 3)
+    t = target[full_body_mask].view(-1, target.shape[1], 77, 3)
     
+    # 13,15 are L-Elbow, L-Wrist | 14,16 are R-Elbow, R-Wrist
     p_lh_arm = p[:, :, 15, :] - p[:, :, 13, :]
     t_lh_arm = t[:, :, 15, :] - t[:, :, 13, :]
     p_rh_arm = p[:, :, 16, :] - p[:, :, 14, :]
@@ -59,8 +61,9 @@ def calculate_arm_hand_alignment_loss(pred, target, is_cropped_batch):
     return (1.0 - cos(p_lh_arm, t_lh_arm).mean()) + (1.0 - cos(p_rh_arm, t_rh_arm).mean())
 
 def calculate_bone_consistency_loss(pred, target):
-    p = pred.view(pred.shape[0], pred.shape[1], 75, 3)
-    t = target.view(target.shape[0], target.shape[1], 75, 3)
+    """Ensures fingers don't stretch or shrink unnaturally."""
+    p = pred.view(pred.shape[0], pred.shape[1], 77, 3)
+    t = target.view(target.shape[0], target.shape[1], 77, 3)
     
     lh_bones = [(33,34), (34,35), (37,38), (38,39), (41,42), (42,43), (45,46), (46,47), (49,50), (50,51)]
     rh_bones = [(54,55), (55,56), (58,59), (59,60), (62,63), (63,64), (66,67), (67,68), (70,71), (71,72)]
@@ -73,6 +76,7 @@ def calculate_bone_consistency_loss(pred, target):
     return loss
 
 def calculate_velocity_loss(pred, target):
+    """Crucial for smoothness: penalizes jitter and incorrect speeds."""
     pred_vel = pred[:, 1:, :] - pred[:, :-1, :]
     target_vel = target[:, 1:, :] - target[:, :-1, :]
     return nn.MSELoss()(pred_vel, target_vel)
@@ -99,50 +103,31 @@ def train_model(config):
     train_loader = DataLoader(train_ds, batch_size=config['training']['batch_size'], shuffle=True, collate_fn=nsl_collate_fn)
     val_loader = DataLoader(val_ds, batch_size=config['training']['batch_size'], shuffle=False, collate_fn=nsl_collate_fn)
 
-    model = NSLTransformer(vocab_size=len(tokenizer.vocab)).to(device)
+    # Initialize model with 231 feature dimensions
+    model = NSLTransformer(vocab_size=len(tokenizer.vocab), feature_dim=231).to(device)
 
     is_fine_tuning = False
     current_lr = float(config['training']['learning_rate'])
     
     if save_path.exists():
-        print(f"🔍 Found existing model at {save_path}. Initializing Fine-Tuning mode...")
+        print(f"🔍 Found existing model. Initializing Fine-Tuning...")
         checkpoint = torch.load(save_path, map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
-
-        fine_tune_lr_factor = config['training'].get('fine_tune_factor', 0.1)
-        current_lr = current_lr * fine_tune_lr_factor
+        current_lr *= config['training'].get('fine_tune_factor', 0.1)
         is_fine_tuning = True
-
+        
         if config['training'].get('freeze_encoder', False):
-            print("❄️ Freezing Text Path and Transformer Encoder...")
-            
-            for param in model.embedding.parameters():
-                param.requires_grad = False
-            
-            for param in model.text_encoder.parameters():
-                param.requires_grad = False
-                
-            for param in model.transformer.encoder.parameters():
-                param.requires_grad = False
-                
-            print("✅ Frozen: embedding, text_encoder, and transformer.encoder")
-            print("🔥 Trainable: motion_projection, transformer.decoder, and output_layer")
-            
-        print(f"🚀 Fine-tuning started with LR: {current_lr}")
-    else:
-        print("🆕 No checkpoint found. Starting training from scratch.")
-
+            for param in model.embedding.parameters(): param.requires_grad = False
+            for param in model.text_encoder.parameters(): param.requires_grad = False
+            for param in model.transformer.encoder.parameters(): param.requires_grad = False
+    
     criterion = nn.MSELoss(reduction='none')
-    optimizer = optim.AdamW(
-        filter(lambda p: p.requires_grad, model.parameters()), 
-        lr=current_lr, 
-        weight_decay=1e-4
-    )
+    optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), 
+                            lr=current_lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=15, factor=0.5)
     
     best_val_loss = float('inf')
     early_stop_counter = 0
-    patience = config['training'].get('early_stopping_patience', 100)
 
     for epoch in range(config['training']['epochs']):
         model.train()
@@ -152,41 +137,49 @@ def train_model(config):
             src, tgt = batch['token_ids'].to(device), batch['features'].to(device)
             is_cropped_batch = batch['is_cropped'].to(device)
             
+            # Autoregressive setup: Input is frames 0 to N-1, Predict 1 to N
             tgt_input, tgt_expected = tgt[:, :-1, :], tgt[:, 1:, :]
 
+            # Scheduled Noise (Exposure Bias mitigation)
             if epoch > 5:
-                noise_scale = 0.00005 if is_fine_tuning else 0.0001
-                noise_lvl = min(0.005, noise_scale * epoch)
+                noise_lvl = min(0.005, (0.0001 * epoch))
                 tgt_input = tgt_input + torch.randn_like(tgt_input) * noise_lvl
             
             optimizer.zero_grad()
             output = model(src, tgt_input)
 
-            # --- DYNAMIC WEIGHTING ---
+            # --- DYNAMIC WEIGHTING (The fix for Transitions) ---
             batch_weights = torch.ones_like(output).to(device)
+            trans_mask = torch.zeros(output.shape[0], device=device, dtype=torch.bool)
             
             for i, t_type in enumerate(batch['types']):
                 if t_type == 'sign':
-                    batch_weights[i, :, :99] = 5.0   # Pose importance
-                    batch_weights[i, :, 99:] = 20.0  # Hand shape importance (High!)
+                    batch_weights[i, :, :99] = 5.0      # Pose
+                    batch_weights[i, :, 99:225] = 25.0  # Hand Shape (Local)
+                    batch_weights[i, :, 225:] = 10.0    # Wrist Meta (Global)
                 else: # Transition
-                    batch_weights[i, :, :99] = 10.0  # Movement importance
-                    batch_weights[i, :, 99:] = 5.0   # Hand shape less critical during move
+                    trans_mask[i] = True
+                    batch_weights[i, :, :99] = 15.0     # Pose (High importance for arm path)
+                    batch_weights[i, :, 99:225] = 2.0   # Hand Shape (Relaxed during move)
+                    batch_weights[i, :, 225:] = 25.0    # Wrist Meta (Global Wrist Movement)
             
-            # MASK OUT POSE LOSS FOR CROPPED DATA
+            # Mask Pose for cropped videos
             batch_weights[is_cropped_batch, :, :99] = 0.0
 
+            # Tip-Specific weighting (Fingertips 111-161 in 225-vector context)
             tips = [111, 112, 113, 123, 124, 125, 135, 136, 137, 147, 148, 149, 159, 160, 161]
-            for t_idx in tips:
-                batch_weights[:, :, t_idx] *= 2.0 
-            
-            rh_tips = [t + 63 for t in tips]
-            for t_idx in rh_tips:
-                batch_weights[:, :, t_idx] *= 2.0
+            for t_idx in tips: batch_weights[:, :, t_idx] *= 2.0 
+            for t_idx in [t + 63 for t in tips]: batch_weights[:, :, t_idx] *= 2.0
             
             # --- LOSS CALCULATION ---
             l_pos = (criterion(output, tgt_expected) * batch_weights).mean()
-            l_vel = calculate_velocity_loss(output, tgt_expected)
+            l_vel_global = calculate_velocity_loss(output, tgt_expected)
+            
+            # Transition-Specific Velocity (Prevents jitter during क to ग)
+            l_vel_trans = 0.0
+            if trans_mask.any():
+                l_vel_trans = calculate_velocity_loss(output[trans_mask], tgt_expected[trans_mask])
+
             l_bone = calculate_bone_consistency_loss(output, tgt_expected)
             l_align = calculate_arm_hand_alignment_loss(output, tgt_expected, is_cropped_batch)
             l_dir = calculate_finger_direction_loss(output, tgt_expected)
@@ -194,10 +187,11 @@ def train_model(config):
             # Total weighted loss
             total_loss = (
                 l_pos + 
-                (5.0 * l_vel) + 
+                (10.0 * l_vel_global) + 
+                (30.0 * l_vel_trans) +
                 (10.0 * l_bone) + 
                 (5.0 * l_align) + 
-                (25.0 * l_dir) 
+                (20.0 * l_dir) 
             )
             
             total_loss.backward()
@@ -205,11 +199,12 @@ def train_model(config):
             optimizer.step()
 
             epoch_losses["pos"] += l_pos.item()
-            epoch_losses["vel"] += l_vel.item()
+            epoch_losses["vel"] += l_vel_global.item()
             epoch_losses["bone"] += l_bone.item()
             epoch_losses["align"] += l_align.item()
             epoch_losses["dir"] += l_dir.item()
 
+        # --- EVALUATION ---
         model.eval()
         val_loss = 0
         with torch.no_grad():
@@ -219,21 +214,12 @@ def train_model(config):
                 val_loss += criterion(v_out, v_tgt[:, 1:, :]).mean().item()
 
         avg_val = val_loss / len(val_loader)
-        
         num_batches = len(train_loader)
-        logger.log_epoch(
-            epoch + 1, 
-            epoch_losses["pos"] / num_batches,
-            epoch_losses["vel"] / num_batches,
-            epoch_losses["bone"] / num_batches,
-            avg_val, 
-            optimizer.param_groups[0]['lr']
-        )
+        
+        logger.log_epoch(epoch + 1, epoch_losses["pos"]/num_batches, epoch_losses["vel"]/num_batches, 
+                         epoch_losses["bone"]/num_batches, avg_val, optimizer.param_groups[0]['lr'])
         
         scheduler.step(avg_val)
-
-        print(f"Epoch [{epoch+1}/{config['training']['epochs']}]")
-
         print(f"Epoch {epoch+1} | Val Loss: {avg_val:.5f} | Pos: {epoch_losses['pos']/num_batches:.4f} | Dir: {epoch_losses['dir']/num_batches:.4f}")
 
         if avg_val < best_val_loss:
@@ -241,14 +227,14 @@ def train_model(config):
             early_stop_counter = 0
             torch.save({
                 'epoch': epoch,
-                'model_state_dict': model.state_dict(), 
-                'optimizer_state_dict': optimizer.state_dict(), 
-                'vocab_size': len(tokenizer.vocab),
-                'loss': best_val_loss
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'feature_dim': 231,
+                'vocab_size': len(tokenizer.vocab)
             }, save_path)
-            print("⭐ Model Saved (Improved)")
+            print("⭐ Model Saved")
         else:
             early_stop_counter += 1
-            if early_stop_counter >= patience:
+            if early_stop_counter >= config['training'].get('early_stopping_patience', 100):
                 print("🛑 Early Stopping!")
                 break

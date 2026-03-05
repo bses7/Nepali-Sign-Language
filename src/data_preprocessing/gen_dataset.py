@@ -7,11 +7,10 @@ from pathlib import Path
 class NSLDataset(Dataset):
     def __init__(self, metadata_path, sequences_root, tokenizer, max_seq_len=200, augment=False):
         """
-        Specialized Dataset for NSL.
-        Handles both static signs and transitions between them.
+        Updated Dataset for NSL.
+        Features: 99 (Pose) + 63 (LH) + 63 (RH) + 3 (LH Meta) + 3 (RH Meta) = 231 Total.
         """
         full_df = pd.read_csv(metadata_path, keep_default_na=False)
-        # Filter for the types we have
         self.df = full_df[full_df['type'].isin(['sign', 'transition'])].reset_index(drop=True)
         
         self.sequences_root = Path(sequences_root)
@@ -19,18 +18,16 @@ class NSLDataset(Dataset):
         self.max_seq_len = max_seq_len
         self.augment = augment
         
-        print(f"📊 Dataset initialized with {len(self.df)} samples (Signs & Transitions).")
+        print(f"📊 Dataset initialized. Features: 231 dimensions (99 Pose, 126 Hands, 6 Meta).")
 
     def __len__(self):
         return len(self.df)
 
     def rotate_point_cloud(self, batch_pts, max_angle=0.05):
-        """Randomly rotates the hands slightly. Reduced angle for stability."""
         angle = np.random.uniform(-max_angle, max_angle)
         cos_a = np.cos(angle)
         sin_a = np.sin(angle)
         
-        # Rotation around Z-axis (plane of the hand)
         R = torch.tensor([
             [cos_a, -sin_a, 0], 
             [sin_a, cos_a, 0], 
@@ -46,60 +43,68 @@ class NSLDataset(Dataset):
         row = self.df.iloc[idx]
         npz_path = Path(row['relative_path'])
         
-        # Path resolution
         if not npz_path.exists():
             npz_path = self.sequences_root.parent / row['relative_path']
 
         data = np.load(npz_path)
         is_cropped = bool(row['is_cropped'])
-        
-        # Load and reshape features
-        # Pose: [F, 33, 3] -> [F, 99], Hands: [F, 21, 3] -> [F, 63]
+
+        # 1. Load Pose, LH, RH (Total 225)
         pose = data['pose'][:, :, :3].reshape(data['pose'].shape[0], -1) 
         lh = data['lh'].reshape(data['lh'].shape[0], -1)
         rh = data['rh'].reshape(data['rh'].shape[0], -1)
 
-        # 1. Normalization Scaling
-        # We scale hands up (x5) to make finger movements more 'visible' to the loss function
+        # 2. NEW: Load Meta Data (Wrist Global Positions - 3 each)
+        # We take only the first 3 values (X, Y, Z) from the 4 values (X, Y, Z, Scale)
+        lh_meta = data['lh_meta'][:, :3] 
+        rh_meta = data['rh_meta'][:, :3]
+
+        # Scaling for normalization
         lh = lh * 5.0
         rh = rh * 5.0
-        pose = pose / 0.5 # Match your 0.5 rule
+        pose = pose / 0.5 
+        # Meta coordinates (Global Wrist) are already normalized relative to shoulders in utils.py
         
-        # 2. Torso Centering (If not already handled in PoseExtractor)
         if not is_cropped:
-            # Anchor to shoulder midpoint
             mid_x = (pose[:, 11*3] + pose[:, 12*3]) / 2
             mid_y = (pose[:, 11*3+1] + pose[:, 12*3+1]) / 2
             for c in range(0, 99, 3): 
                 pose[:, c] -= mid_x
                 pose[:, c+1] -= mid_y
 
-        features = np.concatenate([pose, lh, rh], axis=1)
+        # Concatenate: 99 + 63 + 63 + 3 + 3 = 231
+        features = np.concatenate([pose, lh, rh, lh_meta, rh_meta], axis=1)
         features = torch.tensor(features, dtype=torch.float32)
 
-        # 3. Mode-Based Tokenization
-        # If type is 'transition', the 'char' in CSV is the TARGET letter (e.g., 'Kha')
+        # 3. Handle Tokenization Text
         mode = "sign" if row['type'] == 'sign' else "trans"
-        char = str(row['char'])
+        
+        if mode == "trans":
+            # Check if metadata has a column for the starting character
+            # If your CSV 'char' column for transitions is like 'कख', this works.
+            # If it only says 'ख', you might need to find the previous row.
+            char_text = str(row['char']) 
+            if len(char_text) < 2 and idx > 0:
+                prev_row = self.df.iloc[idx-1]
+                char_text = str(prev_row['char']) + char_text
+        else:
+            char_text = str(row['char'])
         
         token_ids = torch.tensor(
-            self.tokenizer.tokenize(char, mode=mode), 
+            self.tokenizer.tokenize(char_text, mode=mode), 
             dtype=torch.long
         )
 
-        # 4. Augmentation
         if self.augment:
-            # Add very small noise to prevent overfitting to the fixed sequences
             features += torch.randn_like(features) * 0.0005
             
-            # Rotate hands independently to simulate different wrist angles
+            # Augment LH (99-162) and RH (162-225)
             if torch.rand(1) > 0.5:
                 features[:, 99:162] = self.rotate_point_cloud(features[:, 99:162]) 
             if torch.rand(1) > 0.5:
-                features[:, 162:] = self.rotate_point_cloud(features[:, 162:])  
+                features[:, 162:225] = self.rotate_point_cloud(features[:, 162:225])  
             
-            # Wrist points (99-101 and 162-164) should ideally stay at 0,0,0 
-            # after normalization, but we zero them to be safe
+            # Ensure local wrist remains 0,0,0
             features[:, 99:102] = 0.0 
             features[:, 162:165] = 0.0
         
@@ -111,7 +116,6 @@ class NSLDataset(Dataset):
         }
 
 def nsl_collate_fn(batch):
-    # Sort by sequence length for efficient padding
     batch.sort(key=lambda x: x['features'].shape[0], reverse=True)
     
     features = torch.nn.utils.rnn.pad_sequence(
