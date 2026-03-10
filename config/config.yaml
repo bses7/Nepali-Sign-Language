@@ -80,7 +80,7 @@ training:
   checkpoint_dir: "experiments"
   early_stopping_patience: 50
   fine_tune_factor: 0.1
-  freeze_encoder: true
+  freeze_encoder: false
 
 rec_training:
   batch_size: 32

@@ -155,7 +155,7 @@ def train_model(config):
             for i, t_type in enumerate(batch['types']):
                 if t_type == 'sign':
                     batch_weights[i, :, :99] = 5.0      # Pose
-                    batch_weights[i, :, 99:225] = 25.0  # Hand Shape (Local)
+                    batch_weights[i, :, 99:225] = 35.0  # Hand Shape (Local)
                     batch_weights[i, :, 225:] = 10.0    # Wrist Meta (Global)
                 else: # Transition
                     trans_mask[i] = True
