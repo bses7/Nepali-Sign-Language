@@ -1,0 +1,221 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* 1. MAPPING FOR TAILWIND V4 */
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-info: hsl(var(--info));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-sparkle-pulse: sparkle-spin 4s linear infinite;
+  --animate-wiggle: wiggle 2s ease-in-out infinite;
+  --animate-shine: shine 5s infinite;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  @keyframes sparkle-spin {
+    0% {
+      transform: rotate(0deg) scale(1);
+    }
+    50% {
+      transform: rotate(180deg) scale(1.2);
+    }
+    100% {
+      transform: rotate(360deg) scale(1);
+    }
+  }
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(-3deg);
+    }
+    50% {
+      transform: rotate(3deg);
+    }
+  }
+  @keyframes shine {
+    0% {
+      transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    100% {
+      transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
+  }
+}
+
+/* 2. VARIABLE DEFINITIONS */
+:root {
+  --background: 45 40% 94%; /* Warm Cream */
+  --foreground: 140 20% 20%; /* Dark Sage Text */
+
+  --primary: 140 25% 40%; /* Sage Green */
+  --primary-foreground: 45 40% 94%;
+
+  --secondary: 150 20% 65%;
+  --secondary-foreground: 140 20% 20%;
+
+  --accent: 30 80% 60%;
+  --accent-foreground: 140 20% 20%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 140 20% 20%;
+
+  --border: 140 15% 85%;
+  --input: 140 15% 90%;
+  --ring: 140 25% 40%;
+
+  --muted: 140 10% 85%;
+  --muted-foreground: 140 15% 45%;
+
+  --success: 120 40% 50%;
+  --warning: 35 90% 55%;
+  --info: 200 80% 55%;
+
+  --destructive: 0 80% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --radius: 1rem;
+}
+
+.dark {
+  --background: 140 20% 8%; /* Deep dark green base */
+  --foreground: 45 30% 95%; /* Soft cream text */
+
+  --card: 140 18% 12%;
+  --card-foreground: 45 30% 95%;
+
+  --popover: 140 18% 12%;
+  --popover-foreground: 45 30% 95%;
+
+  --primary: 140 35% 45%; /* Sage glow */
+  --primary-foreground: 45 30% 95%;
+
+  --secondary: 150 25% 30%;
+  --secondary-foreground: 45 30% 95%;
+
+  --accent: 30 90% 60%; /* Soft warm accent */
+  --accent-foreground: 140 20% 8%;
+
+  --border: 140 15% 20%;
+  --input: 140 15% 18%;
+  --ring: 140 35% 45%;
+
+  --muted: 140 15% 18%;
+  --muted-foreground: 140 10% 65%;
+
+  --success: 120 50% 45%;
+  --warning: 35 90% 60%;
+  --info: 200 90% 60%;
+
+  --destructive: 0 80% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --radius: 1rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold;
+    letter-spacing: 0.05em;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl;
+    text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.glass {
+  @apply bg-white/80 dark:bg-slate-900/40 backdrop-blur-lg border border-white/20 dark:border-white/10;
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--card)) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+.badge-pulse {
+  @apply animate-pulse;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@layer components {
+  .game-input {
+    @apply w-full px-5 py-4 bg-input border-b-4 border-border rounded-2xl 
+           focus:border-primary focus:outline-none transition-all 
+           font-bold text-foreground placeholder:text-muted-foreground/50;
+  }
+}
