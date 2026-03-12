@@ -370,30 +370,34 @@ function ShopContent() {
                 </div>
 
                 {/* INTERACTIVE 3D CHEST WITH UPARROW */}
+                {/* 2. INTERACTIVE 3D CHEST (Inside your rewards tab) */}
                 <div className="relative aspect-square w-full rounded-[2.5rem] bg-slate-950 border-4 border-slate-100 shadow-inner overflow-hidden order-1 md:order-2 group">
                   <div className="absolute inset-0 z-20">
                     <GameChest3D isOpen={chestOpen} onOpen={handleClaimDaily} />
                   </div>
+
+                  {/* Background Glow Overlay (Keep this very subtle) */}
+                  <div
+                    className={cn(
+                      "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-[100px] transition-all duration-1000 pointer-events-none",
+                      chestOpen ? "bg-yellow-400/10" : "bg-blue-500/5",
+                    )}
+                  />
+
+                  {/* Floating Indicator */}
                   {!chestOpen && (
                     <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center gap-1">
-                      {/* NEW UP ARROW INDICATOR */}
                       <ChevronUp
                         size={32}
-                        className="text-white animate-bounce drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                        className="text-white animate-bounce"
                       />
-                      <div className="bg-white/20 backdrop-blur-md px-6 py-2 rounded-full border-2 border-white/30 animate-bounce">
-                        <p className="text-white font-black text-xs uppercase tracking-widest shadow-sm ">
+                      <div className="bg-white/20 backdrop-blur-md px-6 py-2 rounded-full border-2 border-white/30 animate-pulse">
+                        <p className="text-white font-black text-xs uppercase tracking-widest shadow-sm">
                           Click to Open
                         </p>
                       </div>
                     </div>
                   )}
-                  <div
-                    className={cn(
-                      "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-[100px] transition-all duration-1000",
-                      chestOpen ? "bg-yellow-400/20" : "bg-blue-500/10",
-                    )}
-                  />
                 </div>
               </div>
             </div>

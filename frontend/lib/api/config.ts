@@ -17,6 +17,9 @@ export const API_CONFIG = {
       leaderboard: "/api/v1/users/leaderboard",
       badges: "/api/v1/users/badges",
     },
+    lessons: {
+      signs: "/api/v1/lessons/signs",
+    },
   },
 };
 
