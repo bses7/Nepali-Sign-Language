@@ -13,7 +13,9 @@ export const API_CONFIG = {
     },
     users: {
       dashboard: "/api/v1/users/dashboard",
+      claim: "/api/v1/users/claim-daily",
       leaderboard: "/api/v1/users/leaderboard",
+      badges: "/api/v1/users/badges",
     },
   },
 };

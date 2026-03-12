@@ -14,6 +14,7 @@ export interface DashboardData {
   equipped_avatar_id: string;
   equipped_avatar_folder: string;
   coins: number;
+  can_claim_daily: boolean;
 }
 
 export const usersService = {
@@ -41,5 +42,13 @@ export const usersService = {
     error?: string;
   }> {
     return await apiClient.get(API_CONFIG.endpoints.users.leaderboard);
+  },
+
+  async getUserBadges() {
+    return await apiClient.get<any[]>(API_CONFIG.endpoints.users.badges);
+  },
+
+  async claimDailyReward() {
+    return await apiClient.post(API_CONFIG.endpoints.users.claim);
   },
 };

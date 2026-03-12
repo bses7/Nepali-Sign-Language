@@ -55,6 +55,8 @@ class DashboardOut(BaseModel):
     xp: int
     level: int
     streak_count: int
+
+    coins: int
     
     total_signs: int
     completed_signs: int
@@ -62,13 +64,20 @@ class DashboardOut(BaseModel):
 
     equipped_avatar_id: Optional[int]
     equipped_avatar_folder: Optional[str]
+
+    can_claim_daily: bool
     
     model_config = ConfigDict(from_attributes=True)
 
 class LeaderboardUser(BaseModel):
     first_name: str
+    last_name: str
+    email: str
     xp: int
     level: int
+    streak_count: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 class LeaderboardOut(BaseModel):
     top_users: list[LeaderboardUser]

@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { GameShopIcon } from "@/components/icons/game-shop-icon";
+
 interface Lesson {
   name: string;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
@@ -118,10 +120,28 @@ export default function Dashboard() {
           </h1>
           <div className="flex items-center gap-4">
             <CoinDisplay amount={userStats.coins} />
-            <Link href="/shop" className="hidden md:block">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-secondary/10 border-b-4 border-secondary text-secondary font-black uppercase text-xs transition-all active:translate-y-1 active:border-b-0">
-                <ShoppingBag size={18} />
-                <span>Shop</span>
+            <Link href="/shop" className="hidden md:block group">
+              <button
+                className={cn(
+                  "relative flex items-center gap-3 px-6 py-2.5 rounded-2xl transition-all duration-75",
+                  "bg-white border-b-4 border-slate-200 hover:border-blue-400 active:border-b-0 active:translate-y-1 shadow-lg",
+                )}
+              >
+                <div className="w-8 h-8 group-hover:scale-110 group-hover:rotate-6 transition-transform ">
+                  <GameShopIcon />
+                </div>
+
+                <div className="flex flex-col items-start leading-none">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    Market
+                  </span>
+                  <span className="text-sm font-black uppercase text-blue-600">
+                    Avatar Shop
+                  </span>
+                </div>
+
+                {/* Small Notification Dot (Optional Gamified Detail) */}
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
               </button>
             </Link>
             <ProfileDropdown userName={displayName} />
@@ -189,7 +209,7 @@ export default function Dashboard() {
               </div>
 
               {/* Row 2: NEW GAMIFIED WIDGETS (Fills the empty space) */}
-              <DailyReward />
+              <DailyReward canClaim={dashboard?.can_claim_daily} />
 
               <WeeklyActivity days={["Mon", "Tue", "Wed", "Thu"]} />
             </div>
@@ -276,7 +296,7 @@ export default function Dashboard() {
           {/* 5. RIGHT COLUMN - ACHIEVEMENTS & LEADERBOARD */}
           <div className="space-y-8">
             {/* Trophy Room (Achievements) Preview Card */}
-            <Link href="/badges" className="block group">
+            <Link href="/shop?tab=badges" className="block group">
               <div className="bg-white rounded-[3rem] p-8 border-b-8 border-slate-200 shadow-xl space-y-6 transition-all hover:border-warning hover:-translate-y-1 active:translate-y-0 active:border-b-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">

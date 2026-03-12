@@ -89,3 +89,18 @@ def read_leaderboard(
 def get_my_badges(current_user: User = Depends(get_current_user)):
     """View all earned badges."""
     return current_user.badges
+
+@router.post("/claim-daily")
+def claim_reward(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Claim the daily 100 coin reward.
+    """
+    success, message = user_service.claim_daily_reward(db, current_user)
+    
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+        
+    return {"message": message, "new_balance": current_user.stats.coins}

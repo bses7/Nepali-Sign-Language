@@ -37,7 +37,6 @@ export const ProfileDropdown = ({ userName }: ProfileDropdownProps) => {
 
   const handleProfile = () => {
     setIsOpen(false);
-    // TODO: Navigate to profile page when created
     router.push("/profile");
   };
 

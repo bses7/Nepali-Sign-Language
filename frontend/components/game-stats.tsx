@@ -4,6 +4,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import { Flame, Trophy, Star } from "lucide-react";
 import { GameButton } from "@/components/game-button";
+import { useRouter } from "next/navigation";
 
 interface XPBarProps {
   current: number;
@@ -147,7 +148,7 @@ export const CoinDisplay: React.FC<CoinDisplayProps> = ({
         className,
       )}
     >
-      <span className="text-xl">💰</span>
+      <span className="text-2xl">💰</span>
       <span className="font-bold font-display text-lg text-foreground">
         {amount}
       </span>
@@ -155,22 +156,56 @@ export const CoinDisplay: React.FC<CoinDisplayProps> = ({
   );
 };
 
-export const DailyReward: React.FC = () => {
+interface DailyRewardProps {
+  canClaim?: boolean;
+}
+
+export const DailyReward: React.FC<DailyRewardProps> = ({
+  canClaim = true,
+}) => {
+  const router = useRouter();
+
   return (
-    <div className="bg-white p-6 rounded-[2.5rem] border-b-8 border-slate-200 shadow-xl flex items-center justify-between group cursor-pointer hover:-translate-y-1 transition-all">
+    <div
+      className={cn(
+        "bg-white p-6 rounded-[2.5rem] border-b-8 shadow-xl flex items-center justify-between group transition-all",
+        canClaim
+          ? "border-slate-200 hover:border-primary/30"
+          : "border-slate-100 opacity-80",
+      )}
+    >
       <div className="flex items-center gap-4">
-        <div className="text-4xl animate-bounce">🎁</div>
+        {/* If claimed, stop the bounce and use a checkmark or open box */}
+        <div
+          className={cn(
+            "text-4xl",
+            canClaim ? "animate-bounce" : "grayscale opacity-50",
+          )}
+        >
+          {canClaim ? "🎁" : "📦"}
+        </div>
         <div>
-          <h4 className="font-black uppercase text-sm tracking-tight text-foreground">
+          <h4
+            className={cn(
+              "font-black uppercase text-sm tracking-tight",
+              canClaim ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
             Daily Reward
           </h4>
           <p className="text-[10px] font-black uppercase text-primary tracking-widest">
-            Available Now!
+            {canClaim ? "100 Coins Waiting!" : "See you tomorrow!"}
           </p>
         </div>
       </div>
-      <GameButton variant="retro" className="w-half py-1 text-md">
-        Claim
+
+      <GameButton
+        variant={canClaim ? "retro" : "duolingo" } 
+        size="md"
+        onClick={() => router.push("/shop?tab=rewards")}
+        className={cn(!canClaim && "grayscale cursor-default")}
+      >
+        {canClaim ? "Claim" : "Claimed"}
       </GameButton>
     </div>
   );

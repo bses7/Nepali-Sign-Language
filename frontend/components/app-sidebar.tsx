@@ -37,7 +37,7 @@ export function AppSidebar() {
     <Sidebar className="border-r-8 border-border/50">
       <SidebarContent className="bg-white p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="mt-14 mb-6 px-2">
+          <SidebarGroupLabel className="mt-24 mb-6 px-2">
             <span className="font-display text-3xl font-black text-primary tracking-tighter">
               SignLearn
             </span>

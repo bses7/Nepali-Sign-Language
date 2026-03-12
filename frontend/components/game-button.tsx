@@ -24,9 +24,9 @@ export const GameButton = React.forwardRef<HTMLButtonElement, GameButtonProps>(
     ref,
   ) => {
     const sizeClasses = {
-      sm: "px-2 py-1 text-sm",
-      md: variant === "back" ? "w-14 h-14 text-xl" : "px-4 py-2 text-xl",
-      lg: variant === "back" ? "w-20 h-20 text-3xl" : "px-6 py-3 text-3xl",
+      sm: "px-4 py-1 text-sm",
+      md: variant === "back" ? "w-14 h-14 text-xl" : "px-8 py-3 text-xl",
+      lg: variant === "back" ? "w-20 h-20 text-3xl" : "px-12 py-4 text-3xl",
     };
 
     const variantClasses = {
@@ -43,15 +43,13 @@ export const GameButton = React.forwardRef<HTMLButtonElement, GameButtonProps>(
         "active:translate-y-1 active:shadow-[inset_0_2px_0_rgba(255,255,255,0.5),0_1px_0_#b35900]",
       ),
 
-      // NEW JELLY STYLE (Green Bubbly)
+      // UPDATED JELLY STYLE (Matches your image exactly)
       jelly: cn(
-        "bg-[#76c92e] text-white rounded-full transition-all duration-75 border-2 border-[#4e901a]/20",
-        "shadow-[0_6px_0_0_#4e901a,inset_0_-4px_0_0_rgba(0,0,0,0.2),inset_0_4px_0_0_rgba(255,255,255,0.5)]",
-        "bg-[radial-gradient(circle_at_20%_35%,rgba(255,255,255,0.3)_0%,transparent_20%),radial-gradient(circle_at_35%_30%,rgba(255,255,255,0.2)_0%,transparent_10%),#76c92e]",
-        "active:translate-y-[4px] active:shadow-[0_2px_0_0_#4e901a,inset_0_-2px_0_0_rgba(0,0,0,0.2),inset_0_2px_0_0_rgba(255,255,255,0.5)]",
+        "relative p-0 rounded-full transition-all duration-75",
+        "bg-[#4e901a] border-none shadow-[0_6px_0_0_#3d7014]", // Dark green bottom shadow
+        "active:translate-y-[4px] active:shadow-[0_2px_0_0_#3d7014]",
       ),
 
-      // NEW BACK STYLE (Circular Sage Glossy)
       back: cn(
         "relative p-0 rounded-full transition-all duration-75",
         "bg-[#BFC9B4] border-b-4 border-[#2C3E33]/30 shadow-lg",
@@ -92,11 +90,27 @@ export const GameButton = React.forwardRef<HTMLButtonElement, GameButtonProps>(
               "flex items-center justify-center bg-[#5F7A61] rounded-full shadow-[inset_0_-4px_0_rgba(0,0,0,0.3),inset_0_4px_0_rgba(255,255,255,0.3)] overflow-hidden m-1.5 w-11 h-11 relative",
             )}
           >
-            {/* The glossy highlight bubble */}
             <div className="absolute top-1 left-2 w-3/4 h-1/2 bg-gradient-to-b from-white/40 to-transparent rounded-full rotate-[-15deg] blur-[0.5px]" />
             <div className="relative z-10 text-[#F4EDE4] drop-shadow-md">
               {isLoading ? "..." : children}
             </div>
+          </span>
+        ) : variant === "jelly" ? (
+          /* NEW JELLY INNER BOX */
+          <span
+            className={cn(
+              "w-full h-full flex items-center justify-center bg-[#76c92e] rounded-full relative overflow-hidden",
+              "shadow-[inset_0_-4px_0_0_rgba(0,0,0,0.1),inset_0_4px_0_0_rgba(255,255,255,0.4)]",
+              sizeClasses[size],
+            )}
+          >
+            {/* Glossy light "Blobs" from your image */}
+            <div className="absolute top-1.5 left-4 w-6 h-3 bg-white/30 rounded-full blur-[1px] rotate-[-5deg]" />
+            <div className="absolute top-3 left-10 w-2 h-2 bg-white/20 rounded-full blur-[0.5px]" />
+
+            <span className="relative z-10 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]">
+              {isLoading ? "..." : children}
+            </span>
           </span>
         ) : (
           <span className={sizeClasses[size]}>

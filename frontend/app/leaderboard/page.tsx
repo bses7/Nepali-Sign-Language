@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   Medal,
   Undo2,
+  ChevronLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -57,12 +58,15 @@ export default function LeaderboardPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-border/50 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <GameButton
+              variant="back"
+              onClick={() => router.push("/dashboard")}
+            >
+              <ChevronLeft size={24} strokeWidth={3} />
+            </GameButton>
             <h1 className="font-display text-3xl font-black text-primary tracking-tighter">
               SignLearn
             </h1>
-            <GameButton variant="back" onClick={() => router.back()}>
-              <Undo2 size={24} strokeWidth={3} />
-            </GameButton>
           </div>
           <div className="flex items-center gap-4">
             <CoinDisplay amount={dashboard?.coins || 0} />

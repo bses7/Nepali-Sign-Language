@@ -9,3 +9,6 @@ passlib[bcrypt]
 python-multipart 
 argon2-cffi
 fastapi-mail
+authlib
+httpx
+itsdangerous

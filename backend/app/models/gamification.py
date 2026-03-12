@@ -19,6 +19,8 @@ class UserStats(Base):
     current_avatar_id = Column(Integer, ForeignKey("avatars.id"), nullable=True)
 
     current_avatar = relationship("Avatar")
+
+    last_claim_date = Column(Date, nullable=True)
     
     user = relationship("User", back_populates="stats")
 

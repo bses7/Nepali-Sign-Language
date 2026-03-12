@@ -14,7 +14,10 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)
+
+    google_id = Column(String, unique=True, index=True, nullable=True)
+    github_id = Column(String, unique=True, index=True, nullable=True)
     
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
