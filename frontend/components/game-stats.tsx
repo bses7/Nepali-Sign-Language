@@ -73,16 +73,21 @@ export const LevelCircle: React.FC<LevelCircleProps> = ({
   size = "md",
 }) => {
   const sizes = { sm: "w-12 h-12", md: "w-20 h-20", lg: "w-28 h-28" };
+
   return (
     <div className={cn("relative group", sizes[size])}>
-      {/* Rotating Background Glow */}
       <div className="absolute inset-0 bg-primary/20 rounded-full animate-spin-slow" />
-      <div className="absolute inset-0 flex items-center justify-center bg-primary border-b-8 border-primary-foreground/30 rounded-full shadow-xl">
-        <span className="text-white font-black text-3xl drop-shadow-md">
+
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-primary border-b-8 border-primary-foreground/30 rounded-full shadow-xl">
+        <span className="text-white font-black text-2xl leading-none drop-shadow-md">
           {level}
         </span>
+
+        <span className="text-white/80 font-black text-[8px] uppercase tracking-[0.2em] leading-none mt-1">
+          LVL
+        </span>
       </div>
-      {/* Decorative Star */}
+
       <div className="absolute -top-1 -right-1 bg-yellow-400 p-1.5 rounded-lg border-2 border-white rotate-12 group-hover:rotate-0 transition-transform">
         <Star size={14} className="fill-white text-white" />
       </div>
@@ -200,7 +205,7 @@ export const DailyReward: React.FC<DailyRewardProps> = ({
       </div>
 
       <GameButton
-        variant={canClaim ? "retro" : "duolingo" } 
+        variant={canClaim ? "retro" : "duolingo"}
         size="md"
         onClick={() => router.push("/shop?tab=rewards")}
         className={cn(!canClaim && "grayscale cursor-default")}

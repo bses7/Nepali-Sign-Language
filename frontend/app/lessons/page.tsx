@@ -31,18 +31,11 @@ export default function LessonsPage() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchDashboard();
-      lessonsService.getSigns().then((res) => {
-        if (res.success) {
-          setSigns(res.data || []);
-          // Auto-select the first uncompleted/unlocked sign
-          const current = res.data.find(
-            (s: any) => !s.is_completed && !s.is_locked,
-          );
-          setSelectedSign(current || res.data[0]);
-        }
-      });
+      lessonsService
+        .getSigns()
+        .then((res) => res.success && setSigns(res.data || []));
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchDashboard]);
 
   const filteredSigns = signs.filter((s) => s.category === selectedCategory);
 
@@ -161,8 +154,6 @@ export default function LessonsPage() {
         </button>
       </div>
 
-      {/* HELP MODAL WITH SPIN ANIMATION */}
-      {/* HELP MODAL WITH MASSIVE Z-INDEX */}
       {isHelpOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
           <div className="bg-white rounded-[3rem] w-full max-w-md p-10 border-b-[12px] border-slate-200 shadow-2xl relative animate-pop-spin">

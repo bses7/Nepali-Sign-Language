@@ -1,246 +1,200 @@
-'use client'
+"use client";
 
-import { GameButton } from '@/components/game-button'
-import { XPBar } from '@/components/game-stats'
-import Lesson3DViewer from '@/components/lesson-3d-viewer'
-import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/store/auth";
+import { lessonsService } from "@/lib/api/lessons"; // Using our service
+import { GameButton } from "@/components/game-button";
+import { Sign3DViewer } from "@/components/sign-3d-viewer";
+import { CoinDisplay } from "@/components/game-stats";
+import {
+  ArrowLeft,
+  Star,
+  CheckCircle2,
+  Lightbulb,
+  Zap,
+  ShieldCheck,
+  Trophy,
+} from "lucide-react";
+import { toast } from "sonner";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-interface LessonParams {
-  params: {
-    id: string
-  }
-}
+export default function LessonDetailPage() {
+  const { id } = useParams();
+  const router = useRouter();
+  const { dashboard, fetchDashboard } = useAuthStore();
 
-export default function LessonPage({ params }: LessonParams) {
-  const lessonId = parseInt(params.id)
-  const [currentStep, setCurrentStep] = useState(0)
-  const [isQuizMode, setIsQuizMode] = useState(false)
+  const [sign, setSign] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const lesson = {
-    id: lessonId,
-    title: 'Alphabet Basics',
-    difficulty: 'Beginner',
-    totalSteps: 5,
-    xpReward: 100,
-    description: 'Learn the fundamentals of Nepali Sign Language alphabet',
-    steps: [
-      {
-        sign: 'A',
-        description: 'Form a closed fist with your thumb on the side',
-        tips: ['Keep your hand at shoulder level', 'Your palm should face forward'],
-      },
-      {
-        sign: 'B',
-        description: 'Open your hand with fingers together and thumb folded',
-        tips: ['All fingers should point upward', 'Keep the palm facing forward'],
-      },
-      {
-        sign: 'C',
-        description: 'Form a C-shape with your thumb and fingers',
-        tips: ['The curve should be smooth', 'Position at mouth level'],
-      },
-      {
-        sign: 'D',
-        description: 'Make an O-shape with your thumb and fingers at the mouth',
-        tips: ['Connect thumb to index finger', 'Other fingers point upward'],
-      },
-      {
-        sign: 'E',
-        description: 'Form a fist and place it on your chin',
-        tips: ['All fingers should be closed', 'Keep consistent pressure'],
-      },
-    ],
-    quiz: [
-      {
-        question: 'Which sign requires forming a C-shape?',
-        options: ['A', 'B', 'C', 'D'],
-        correctAnswer: 2,
-      },
-      {
-        question: 'At what level should you position sign B?',
-        options: ['Chest', 'Mouth', 'Shoulder', 'Head'],
-        correctAnswer: 2,
-      },
-    ],
-  }
+  useEffect(() => {
+    const loadData = async () => {
+      // 1. Use the established service structure
+      const res = await lessonsService.getSignById(id as string);
+      if (res.success) {
+        setSign(res.data);
+      } else {
+        toast.error("Sign data not found!");
+        router.push("/lessons");
+      }
+      setIsLoading(false);
+      fetchDashboard();
+    };
+    loadData();
+  }, [id, fetchDashboard, router]);
 
-  const currentLessonStep = lesson.steps[currentStep]
-  const isLastStep = currentStep === lesson.steps.length - 1
+  const handleComplete = async () => {
+    const res = await lessonsService.completeSign(id as string);
+    if (res.success) {
+      toast.success("Lesson Complete! +50 XP", {
+        icon: <Zap className="text-yellow-500 fill-yellow-500" />,
+      });
+      router.push("/lessons");
+    } else {
+      toast.error(res.error || "Failed to save progress");
+    }
+  };
+
+  if (isLoading || !sign) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-background via-card to-background">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/lessons" className="font-display text-2xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent hover:scale-105 transition-transform">
-            SignLearn
-          </Link>
+    <div className="min-h-screen bg-[#F4EDE4] text-[#2C3E33]">
+      {/* HUD NAV */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-border/50 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="text-sm font-semibold text-muted-foreground">
-              Step {currentStep + 1} / {lesson.totalSteps}
+            <GameButton variant="back" onClick={() => router.push("/lessons")}>
+              <ArrowLeft size={24} strokeWidth={3} />
+            </GameButton>
+            <div>
+              <h1 className="font-display text-2xl font-black text-primary uppercase tracking-tighter leading-none">
+                {sign.title}
+              </h1>
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">
+                Category: {sign.category}
+              </p>
             </div>
-            <Link href="/lessons">
-              <GameButton variant="accent" size="sm">
-                Back
-              </GameButton>
-            </Link>
           </div>
+          <CoinDisplay amount={dashboard?.coins || 0} />
         </div>
       </nav>
 
-      <main className="pt-24 pb-12">
-        {/* Header */}
-        <section className="px-4 py-8 max-w-7xl mx-auto space-y-4">
-          <h1 className="font-display text-5xl font-black">
-            {lesson.title} <span className="text-primary">- Part {currentStep + 1}</span>
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Master each sign step by step with interactive 3D visualizations
-          </p>
-        </section>
+      <main className="pt-28 pb-12 px-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* 3D VIEWER */}
+          <div className="lg:col-span-7 h-[500px] lg:h-[700px]">
+            <Sign3DViewer
+              modelUrl={sign.model_url}
+              animationName={sign.animation_name}
+            />
+          </div>
 
-        {!isQuizMode ? (
-          <>
-            {/* 3D Viewer Section */}
-            <section className="px-4 py-8 max-w-7xl mx-auto">
-              <div className="grid lg:grid-cols-2 gap-8">
-                {/* 3D Viewer */}
-                <div className="space-y-4">
-                  <h2 className="font-display text-2xl font-bold">Watch & Learn</h2>
-                  <Lesson3DViewer />
-                  <p className="text-sm text-muted-foreground">
-                    Rotate the model with your mouse to see the sign from different angles. Click and drag to explore.
-                  </p>
+          {/* KNOWLEDGE PANEL */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-white rounded-[2.5rem] p-8 border-b-8 border-slate-200 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="bg-primary/10 px-4 py-1 rounded-full border-2 border-primary/20">
+                  <span className="text-primary font-black text-xs uppercase tracking-widest">
+                    {sign.difficulty}
+                  </span>
                 </div>
-
-                {/* Sign Information */}
-                <div className="space-y-6">
-                  <div className="glass rounded-3xl p-8 border-2 border-primary/20 space-y-6">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-2">Current Sign</p>
-                      <h2 className="font-display text-6xl font-black text-primary">
-                        {currentLessonStep.sign}
-                      </h2>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h3 className="font-bold">How to Sign</h3>
-                      <p className="text-muted-foreground">{currentLessonStep.description}</p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h3 className="font-bold">💡 Tips for Success</h3>
-                      {currentLessonStep.tips.map((tip, i) => (
-                        <div key={i} className="flex gap-3 p-3 bg-success/10 rounded-lg border border-success/20">
-                          <span className="text-lg">✓</span>
-                          <p className="text-sm">{tip}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Progress */}
-                  <div className="glass rounded-3xl p-8 border-2 border-accent/20 space-y-4">
-                    <h3 className="font-bold">Lesson Progress</h3>
-                    <XPBar
-                      current={(currentStep / lesson.totalSteps) * 100}
-                      max={100}
-                      level={lesson.id}
-                      showLabel={false}
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Complete all steps to earn {lesson.xpReward} XP
-                    </p>
-                  </div>
+                <div className="flex gap-1 text-yellow-500">
+                  <Star size={18} fill="currentColor" />
+                  <Star size={18} fill="currentColor" />
+                  <Star size={18} fill="currentColor" />
                 </div>
               </div>
-            </section>
 
-            {/* Navigation Buttons */}
-            <section className="px-4 py-8 max-w-7xl mx-auto">
-              <div className="flex gap-4 justify-between">
-                <GameButton
-                  variant="secondary"
-                  size="lg"
-                  disabled={currentStep === 0}
-                  onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                >
-                  Previous Sign
-                </GameButton>
-
-                {isLastStep ? (
-                  <GameButton
-                    variant="primary"
-                    size="lg"
-                    onClick={() => setIsQuizMode(true)}
-                  >
-                    Take Quiz
-                  </GameButton>
-                ) : (
-                  <GameButton
-                    variant="primary"
-                    size="lg"
-                    onClick={() => setCurrentStep(currentStep + 1)}
-                  >
-                    Next Sign
-                  </GameButton>
-                )}
+              <div className="flex items-center gap-6">
+                <div className="w-24 h-24 bg-slate-50 rounded-3xl border-4 border-slate-100 flex items-center justify-center shadow-inner">
+                  <span className="text-6xl font-black text-primary">
+                    {sign.nepali_char}
+                  </span>
+                </div>
+                <h2 className="text-5xl font-black uppercase tracking-tighter">
+                  {sign.title}
+                </h2>
               </div>
-            </section>
-          </>
-        ) : (
-          <>
-            {/* Quiz Mode */}
-            <section className="px-4 py-8 max-w-2xl mx-auto">
-              <div className="glass rounded-3xl p-8 border-2 border-warning/20 space-y-8">
-                <div>
-                  <h2 className="font-display text-3xl font-bold mb-2">Knowledge Check</h2>
-                  <p className="text-muted-foreground">
-                    Test your understanding before moving forward
-                  </p>
-                </div>
 
-                <div className="space-y-6">
-                  {lesson.quiz.map((q, idx) => (
-                    <div key={idx} className="space-y-4">
-                      <p className="font-semibold text-lg">{idx + 1}. {q.question}</p>
-                      <div className="grid gap-3">
-                        {q.options.map((option, optIdx) => (
-                          <button
-                            key={optIdx}
-                            className="p-4 rounded-2xl border-2 border-border hover:border-primary bg-card hover:bg-primary/10 transition-all text-left font-semibold"
-                          >
-                            {option}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex gap-4">
-                  <GameButton
-                    variant="secondary"
-                    size="lg"
-                    onClick={() => setIsQuizMode(false)}
-                    className="flex-1"
-                  >
-                    Back to Lesson
-                  </GameButton>
-                  <GameButton
-                    variant="primary"
-                    size="lg"
-                    className="flex-1"
-                  >
-                    Submit Answers
-                  </GameButton>
-                </div>
+              <div className="pt-4 border-t border-slate-100">
+                <p className="text-muted-foreground font-medium leading-relaxed">
+                  {sign.description ||
+                    `Study the instructor's hand movements for '${sign.nepali_char}'. You can slow down the animation or rotate the view to see every detail.`}
+                </p>
               </div>
-            </section>
-          </>
-        )}
+            </div>
+
+            {/* GAMIFIED REWARDS PREVIEW */}
+            <div className="bg-white rounded-[2rem] p-6 border-b-8 border-slate-200 shadow-xl">
+              <h4 className="font-black uppercase text-[10px] tracking-widest text-muted-foreground text-center mb-6">
+                Completion Rewards
+              </h4>
+              <div className="flex justify-around items-center">
+                <RewardIcon
+                  icon={<Zap />}
+                  label="+50 XP"
+                  color="bg-yellow-400"
+                />
+                <RewardIcon
+                  icon={<ShieldCheck />}
+                  label="UNLOCKED"
+                  color="bg-blue-500"
+                />
+                <RewardIcon
+                  icon={<Trophy />}
+                  label="BADGE"
+                  color="bg-primary"
+                />
+              </div>
+            </div>
+
+            <GameButton
+              variant="retro"
+              size="lg"
+              className="w-full py-2 text-3xl"
+              onClick={handleComplete}
+            >
+              <div className="flex items-center gap-4">
+                <CheckCircle2 size={32} /> MASTERED!
+              </div>
+            </GameButton>
+          </div>
+        </div>
       </main>
     </div>
-  )
+  );
+}
+
+function RewardIcon({ icon, label, color }: any) {
+  function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div
+        className={cn(
+          "w-12 h-12 rounded-2xl flex items-center justify-center text-white border-b-4",
+          color,
+        )}
+      >
+        {icon}
+      </div>
+      <span className="font-black text-[9px] uppercase tracking-tighter">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background gap-4">
+      <div className="w-16 h-16 border-8 border-primary/20 border-t-primary rounded-full animate-spin" />
+      <p className="font-black uppercase tracking-widest text-primary animate-pulse">
+        Entering Dojo...
+      </p>
+    </div>
+  );
 }

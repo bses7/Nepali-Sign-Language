@@ -3,6 +3,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export const API_CONFIG = {
   baseURL: API_BASE_URL,
+  staticRoot: `${API_BASE_URL}/static`,
   version: "v1",
   endpoints: {
     auth: {
@@ -19,7 +20,12 @@ export const API_CONFIG = {
     },
     lessons: {
       signs: "/api/v1/lessons/signs",
+      sign_id: (id: string) => `/api/v1/lessons/signs/${id}`,
+      complete_sign: (id: string) => `/api/v1/lessons/signs/${id}/complete`,
     },
+    avatar: {
+      store: "/api/v1/avatars/store",
+    }
   },
 };
 

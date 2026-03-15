@@ -349,43 +349,56 @@ export function Roadmap3D({
                   <meshStandardMaterial color="#5d4037" roughness={1} />
                 </mesh>
 
+                {/* --- LAYER 1: THE NODE (On the ground) --- */}
                 <Html
                   transform
                   sprite
                   distanceFactor={20}
-                  position={[0, 0.5, 0]}
+                  position={[0, 0.5, 0]} // Attached to the base
+                  zIndexRange={[0, 10]}
                 >
-                  <div className="flex flex-col items-center">
-                    {/* Show Preview Card if this node is selected */}
-                    {isSelected ? (
-                      <SignPreviewCard
-                        sign={sign}
-                        onClose={() => onLevelClick(null)}
-                      />
-                    ) : isCurrentProgress ? (
-                      /* Show Avatar if it's the current progress point */
-                      <div className="absolute -top-44 flex flex-col items-center z-50 animate-float">
-                        <div className="w-24 h-32 bg-slate-900 rounded-[2rem] border-4 border-yellow-400 overflow-hidden shadow-2xl">
-                          <Avatar3DViewer
-                            avatarFolder={avatarFolder}
-                            className="scale-125 translate-y-6"
-                          />
-                        </div>
-                        <MapPin
-                          className="text-yellow-400 fill-yellow-100 mt-2"
-                          size={36}
-                        />
-                      </div>
-                    ) : null}
-
-                    <RoadmapNode
-                      sign={sign}
-                      index={i}
-                      isCurrent={isCurrentProgress}
-                      onClick={onLevelClick}
-                    />
-                  </div>
+                  <RoadmapNode
+                    sign={sign}
+                    index={i}
+                    isCurrent={isCurrentProgress}
+                    onClick={onLevelClick}
+                  />
                 </Html>
+
+                {/* --- LAYER 2: THE OVERLAYS (Floating higher in 3D space) --- */}
+                {(isSelected || isCurrentProgress) && (
+                  <Html
+                    transform
+                    sprite
+                    distanceFactor={15}
+                    position={[0, 7.5, 0]} // ATTACHED 2 UNITS HIGHER (Fixes layering)
+                    zIndexRange={[20, 100]}
+                  >
+                    <div className="flex flex-col items-center pointer-events-none">
+                      <div className="relative pointer-events-auto">
+                        {isSelected ? (
+                          <SignPreviewCard
+                            sign={sign}
+                            onClose={() => onLevelClick(null)}
+                          />
+                        ) : isCurrentProgress ? (
+                          <div className="flex flex-col items-center animate-float">
+                            <div className="w-24 h-32 bg-slate-900 rounded-[2rem] border-4 border-yellow-400 overflow-hidden shadow-2xl">
+                              <Avatar3DViewer
+                                avatarFolder={avatarFolder}
+                                className="scale-110 translate-y-6"
+                              />
+                            </div>
+                            <MapPin
+                              className="text-yellow-400 fill-yellow-100 mt-2"
+                              size={36}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </Html>
+                )}
               </group>
             );
           })}

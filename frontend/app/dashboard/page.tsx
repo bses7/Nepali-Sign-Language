@@ -216,26 +216,37 @@ export default function Dashboard() {
           </div>
 
           {/* 3. RIGHT SIDE - AVATAR BOX */}
-          <div className="bg-white rounded-[3rem] p-6 border-b-[12px] border-slate-200 shadow-2xl space-y-6">
-            <div className="flex flex-col items-center gap-2">
-              <LevelCircle
-                level={userStats.level}
-                size="lg"
-                variant="success"
-              />
-              <p className="font-black uppercase text-xs tracking-widest text-muted-foreground">
-                Current Level
-              </p>
-            </div>
-            <div className="aspect-square w-full rounded-[2rem] overflow-hidden bg-slate-900 border-4 border-slate-100 shadow-inner">
+          <div className="bg-white rounded-[3rem] p-6 border-b-[12px] border-slate-200 shadow-2xl space-y-2">
+            {/* The 3D Container */}
+            <div className="relative h-[560px] w-full rounded-[2.5rem] overflow-hidden bg-slate-900 border-4 border-slate-100 shadow-inner">
+              {/* LEVEL BADGE HUD - Positioned Top Left */}
+              <div className="absolute top-6 left-6 z-10 pointer-events-none flex flex-col items-center">
+                {/* THE CIRCLE: Size remains "md" exactly as before */}
+                <LevelCircle
+                  level={userStats.level}
+                  size="md"
+                  variant="success"
+                  className="shadow-2xl border-white"
+                />
+              </div>
+
+              {/* THE 3D VIEWER */}
               <Avatar3DViewer
-                avatarFolder={dashboard?.equipped_avatar_folder || "indigo"}
+                avatarFolder={dashboard?.equipped_avatar_folder || "avatar"}
+                animationName="BreathingIdle"
               />
+
+              {/* Subtle dark gradient for depth */}
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
             </div>
-            <div className="text-center">
-              <h4 className="font-black uppercase tracking-tight">
-                {dashboard?.equipped_avatar_folder || "Basic"} Avatar
-              </h4>
+
+            {/* CHARACTER INFO & CHANGE BUTTON */}
+            <div className="space-y-4">
+              <Link href="/shop" className="block">
+                <GameButton variant="retro" className="w-full py-2 text-lg">
+                  Change Character
+                </GameButton>
+              </Link>
             </div>
           </div>
         </section>
