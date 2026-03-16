@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth";
-import { lessonsService } from "@/lib/api/lessons"; // Using our service
+import { lessonsService } from "@/lib/api/lessons";
 import { GameButton } from "@/components/game-button";
 import { Sign3DViewer } from "@/components/sign-3d-viewer";
 import { CoinDisplay } from "@/components/game-stats";
@@ -11,14 +11,12 @@ import {
   ArrowLeft,
   Star,
   CheckCircle2,
-  Lightbulb,
   Zap,
   ShieldCheck,
   Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { cn } from "@/lib/utils"; // Use the standard project cn utility
 
 export default function LessonDetailPage() {
   const { id } = useParams();
@@ -27,17 +25,34 @@ export default function LessonDetailPage() {
 
   const [sign, setSign] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMastered, setIsMastered] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
-      // 1. Use the established service structure
-      const res = await lessonsService.getSignById(id as string);
-      if (res.success) {
-        setSign(res.data);
+      // 1. Fetch the specific sign details (for the 3D model/title)
+      const detailRes = await lessonsService.getSignById(id as string);
+
+      // 2. Fetch all signs to check the USER'S PROGRESS (is_completed)
+      const listRes = await lessonsService.getSigns();
+
+      if (detailRes.success) {
+        setSign(detailRes.data);
+
+        // 3. Find this specific sign in the progress list to check status
+        if (listRes.success) {
+          const signProgress = listRes.data?.find(
+            (s: any) => s.id === Number(id),
+          );
+          if (signProgress) {
+            setIsMastered(signProgress.is_completed);
+          }
+        }
       } else {
         toast.error("Sign data not found!");
         router.push("/lessons");
       }
+
       setIsLoading(false);
       fetchDashboard();
     };
@@ -45,26 +60,35 @@ export default function LessonDetailPage() {
   }, [id, fetchDashboard, router]);
 
   const handleComplete = async () => {
-    const res = await lessonsService.completeSign(id as string);
+    if (isMastered || isCompleting) return;
+
+    setIsCompleting(true);
+    const res = await lessonsService.completeSign(Number(id));
+
     if (res.success) {
-      toast.success("Lesson Complete! +50 XP", {
-        icon: <Zap className="text-yellow-500 fill-yellow-500" />,
+      setIsMastered(true);
+      toast.success("LEVEL MASTERED!", {
+        description: "+50 XP and 100 Coins earned!",
+        icon: <Trophy className="text-yellow-500" />,
       });
-      router.push("/lessons");
+      fetchDashboard();
     } else {
       toast.error(res.error || "Failed to save progress");
     }
+    setIsCompleting(false);
   };
 
   if (isLoading || !sign) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen bg-[#F4EDE4] text-[#2C3E33]">
-      {/* HUD NAV */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-border/50 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <GameButton variant="back" onClick={() => router.push("/lessons")}>
+            <GameButton
+              variant="back"
+              onClick={() => router.push(`/lessons?category=${sign.category}`)} 
+            >
               <ArrowLeft size={24} strokeWidth={3} />
             </GameButton>
             <div>
@@ -82,7 +106,6 @@ export default function LessonDetailPage() {
 
       <main className="pt-28 pb-12 px-6 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* 3D VIEWER */}
           <div className="lg:col-span-7 h-[500px] lg:h-[700px]">
             <Sign3DViewer
               modelUrl={sign.model_url}
@@ -90,7 +113,6 @@ export default function LessonDetailPage() {
             />
           </div>
 
-          {/* KNOWLEDGE PANEL */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-[2.5rem] p-8 border-b-8 border-slate-200 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
@@ -99,10 +121,18 @@ export default function LessonDetailPage() {
                     {sign.difficulty}
                   </span>
                 </div>
-                <div className="flex gap-1 text-yellow-500">
-                  <Star size={18} fill="currentColor" />
-                  <Star size={18} fill="currentColor" />
-                  <Star size={18} fill="currentColor" />
+                <div className="flex gap-1">
+                  {[1, 2, 3].map((s) => (
+                    <Star
+                      key={s}
+                      size={18}
+                      className={cn(
+                        isMastered
+                          ? "fill-yellow-400 text-yellow-500"
+                          : "text-slate-200",
+                      )}
+                    />
+                  ))}
                 </div>
               </div>
 
@@ -118,14 +148,13 @@ export default function LessonDetailPage() {
               </div>
 
               <div className="pt-4 border-t border-slate-100">
-                <p className="text-muted-foreground font-medium leading-relaxed">
+                <p className="text-muted-foreground font-medium leading-relaxed italic">
                   {sign.description ||
-                    `Study the instructor's hand movements for '${sign.nepali_char}'. You can slow down the animation or rotate the view to see every detail.`}
+                    `Analyze the instructor's hand movements for "${sign.nepali_char}". Rotate the view to see the sign from different angles.`}
                 </p>
               </div>
             </div>
 
-            {/* GAMIFIED REWARDS PREVIEW */}
             <div className="bg-white rounded-[2rem] p-6 border-b-8 border-slate-200 shadow-xl">
               <h4 className="font-black uppercase text-[10px] tracking-widest text-muted-foreground text-center mb-6">
                 Completion Rewards
@@ -138,7 +167,7 @@ export default function LessonDetailPage() {
                 />
                 <RewardIcon
                   icon={<ShieldCheck />}
-                  label="UNLOCKED"
+                  label="MASTERED"
                   color="bg-blue-500"
                 />
                 <RewardIcon
@@ -150,13 +179,21 @@ export default function LessonDetailPage() {
             </div>
 
             <GameButton
-              variant="retro"
+              variant={isMastered ? "duolingo" : "retro"}
               size="lg"
-              className="w-full py-2 text-3xl"
+              className="w-full py-2  text-3xl shadow-xl"
               onClick={handleComplete}
+              isLoading={isCompleting}
+              disabled={isMastered}
             >
               <div className="flex items-center gap-4">
-                <CheckCircle2 size={32} /> MASTERED!
+                {isMastered ? (
+                  <>
+                    <CheckCircle2 size={32} /> Lesson Completed
+                  </>
+                ) : (
+                  "Complete Lesson !"
+                )}
               </div>
             </GameButton>
           </div>
@@ -166,11 +203,16 @@ export default function LessonDetailPage() {
   );
 }
 
-function RewardIcon({ icon, label, color }: any) {
-  function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs));
-  }
-
+// Fixed the RewardIcon helper to use standard cn
+function RewardIcon({
+  icon,
+  label,
+  color,
+}: {
+  icon: any;
+  label: string;
+  color: string;
+}) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div

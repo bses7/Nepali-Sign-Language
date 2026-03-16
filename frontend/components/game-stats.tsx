@@ -216,30 +216,54 @@ export const DailyReward: React.FC<DailyRewardProps> = ({
   );
 };
 
-export const WeeklyActivity: React.FC<{ days: string[] }> = ({ days }) => {
-  const weekDays = ["M", "T", "W", "T", "F", "S", "S"];
+interface WeeklyActivityProps {
+  activityDays?: number[]; // Expecting something like [0, 2, 6]
+}
+
+export const WeeklyActivity: React.FC<WeeklyActivityProps> = ({
+  activityDays = [],
+}) => {
+  // Mapping labels to standard Python weekday indices (0=Mon, 6=Sun)
+  const days = [
+    { label: "M", id: 0 },
+    { label: "T", id: 1 },
+    { label: "W", id: 2 },
+    { label: "T", id: 3 },
+    { label: "F", id: 4 },
+    { label: "S", id: 5 },
+    { label: "S", id: 6 },
+  ];
+
   return (
-    <div className="bg-white p-6 rounded-[2.5rem] border-b-8 border-slate-200 shadow-xl">
-      <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground mb-4">
-        Weekly Activity
+    <div className="bg-white p-6 rounded-[2.5rem] border-b-8 border-slate-200 shadow-xl flex flex-col justify-between">
+      <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground mb-4 text-center">
+        Weekly Training
       </h4>
-      <div className="flex justify-between items-center px-2">
-        {weekDays.map((day, i) => {
-          const isActive = i < 4;
+      <div className="flex justify-between items-center px-1">
+        {days.map((day) => {
+          const isActive = activityDays.includes(day.id);
+
           return (
-            <div key={i} className="flex flex-col items-center gap-2">
+            <div key={day.id} className="flex flex-col items-center gap-2">
+              {/* 3D Training Gem */}
               <div
                 className={cn(
-                  "w-8 h-8 rounded-xl border-b-4 flex items-center justify-center text-[10px] font-black transition-all",
+                  "w-9 h-9 rounded-xl border-b-4 flex items-center justify-center text-xs font-black transition-all duration-300",
                   isActive
-                    ? "bg-primary text-white border-primary-foreground/30"
-                    : "bg-slate-100 text-slate-400 border-slate-200",
+                    ? "bg-primary text-white border-[#4a5f4b] shadow-[0_4px_10px_rgba(95,122,97,0.4)] scale-110"
+                    : "bg-slate-100 text-slate-300 border-slate-200 opacity-60",
                 )}
+                title={isActive ? "Training Complete!" : "No activity"}
               >
                 {isActive ? "✓" : ""}
               </div>
-              <span className="text-[10px] font-black text-muted-foreground">
-                {day}
+              <span
+                className={cn(
+                  "text-[10px] font-black transition-colors",
+                  isActive ? "text-primary" : "text-muted-foreground/50",
+                )}
+              >
+                {day.label}
               </span>
             </div>
           );

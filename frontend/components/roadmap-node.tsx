@@ -34,25 +34,35 @@ export function RoadmapNode({ sign, index, isCurrent, onClick }: NodeProps) {
   };
 
   const colors = {
-    completed: "bg-[#76c92e] border-[#4e901a] shadow-[0_6px_0_0_#3d7014]",
+    // 1. Completed state (ORANGE)
+    completed: "bg-[#ff9600] border-[#d97900] shadow-[0_6px_0_0_#b35900]",
+
+    // 2. Current state (SAGE GREEN / PRIMARY)
     current:
       "bg-primary border-[#4a5f4b] shadow-[0_8px_0_0_#2C3E33] animate-pulse",
+
+    // 3. Locked state (DARK SAGE)
     locked:
       "bg-[#2C3E33] border-[#1A261E] shadow-[0_4px_0_0_#111827] grayscale opacity-80",
+
+    // 4. Unlocked but not current/completed (BLUE)
+    active: "bg-[#76c92e] border-[#4e901a] shadow-[0_6px_0_0_#3d7014]",
   };
 
+  // UPDATED LOGIC: Specific checks for each state
   const activeColor = isLocked
     ? colors.locked
     : isCurrent
       ? colors.current
-      : colors.completed;
+      : isCompleted
+        ? colors.completed
+        : colors.active;
 
   if (!mounted) return null;
 
   return (
     <div className="relative flex flex-col items-center w-fit h-fit select-none">
       <div className="relative">
-        {/* BUTTON REDUCED TO w-16 */}
         <button
           disabled={isLocked}
           onClick={() => onClick(sign)}
@@ -69,7 +79,6 @@ export function RoadmapNode({ sign, index, isCurrent, onClick }: NodeProps) {
               isLocked ? "bg-black/20" : "bg-black/5",
             )}
           >
-            {/* TEXT REDUCED TO text-2xl */}
             <span
               className={cn(
                 "font-display font-black text-2xl",
@@ -104,7 +113,6 @@ export function RoadmapNode({ sign, index, isCurrent, onClick }: NodeProps) {
         )}
       </div>
 
-      {/* BADGE TEXT REDUCED */}
       <div
         className={cn(
           "mt-3 px-3 py-0.5 rounded-xl border-b-2 font-black text-[8px] uppercase tracking-tighter shadow-sm whitespace-nowrap",

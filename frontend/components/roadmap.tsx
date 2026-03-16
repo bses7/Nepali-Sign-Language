@@ -12,8 +12,7 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import { MapPin } from "lucide-react";
-import { Avatar3DViewer } from "./avatar-viewer-3d";
-import { RoadmapNode } from "./roadmap-node"; // Importing your node component
+import { RoadmapNode } from "./roadmap-node";
 import { SignPreviewCard } from "./sign-preview-card";
 
 // --- GLTF LOADING HELPER ---
@@ -74,16 +73,21 @@ function WorldDragger({ totalLength, targetZ }: any) {
 
   useEffect(() => {
     const canvas = gl.domElement;
+
+    // 1. Zoom Logic (Wheel)
     const onWheel = (e: WheelEvent) => {
       targetFOV.current = Math.max(
         30,
         Math.min(60, targetFOV.current + e.deltaY * 0.05),
       );
     };
+
+    // 2. Navigation Logic (Mouse/Touch Drag)
     const onDown = (e: any) => {
       isDragging.current = true;
       lastY.current = e.clientY || (e.touches ? e.touches[0].clientY : 0);
     };
+
     const onMove = (e: any) => {
       if (!isDragging.current) return;
       const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
@@ -94,8 +98,22 @@ function WorldDragger({ totalLength, targetZ }: any) {
       );
       lastY.current = y;
     };
+
     const onUp = () => (isDragging.current = false);
 
+    // 3. --- NEW: Keyboard Navigation Logic ---
+    const onKeyDown = (e: KeyboardEvent) => {
+      const moveStep = 4; // How many units to move per keypress
+
+      if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
+        targetZ.current = Math.max(-totalLength, targetZ.current - moveStep);
+      }
+      if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
+        targetZ.current = Math.min(10, targetZ.current + moveStep);
+      }
+    };
+
+    // Event Listeners
     canvas.addEventListener("wheel", onWheel, { passive: true });
     canvas.addEventListener("mousedown", onDown);
     window.addEventListener("mousemove", onMove);
@@ -103,6 +121,10 @@ function WorldDragger({ totalLength, targetZ }: any) {
     canvas.addEventListener("touchstart", onDown);
     window.addEventListener("touchmove", onMove, { passive: false });
     window.addEventListener("touchend", onUp);
+
+    // Add Keyboard listener to window
+    window.addEventListener("keydown", onKeyDown);
+
     return () => {
       canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("mousedown", onDown);
@@ -111,6 +133,7 @@ function WorldDragger({ totalLength, targetZ }: any) {
       canvas.removeEventListener("touchstart", onDown);
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onUp);
+      window.removeEventListener("keydown", onKeyDown);
     };
   }, [gl, totalLength, targetZ]);
 
@@ -120,10 +143,11 @@ function WorldDragger({ totalLength, targetZ }: any) {
       pCamera.fov = THREE.MathUtils.lerp(pCamera.fov, targetFOV.current, 0.1);
       pCamera.updateProjectionMatrix();
     }
+    // Smooth Lerp for the actual movement
     currentZ.current = THREE.MathUtils.lerp(
       currentZ.current,
       targetZ.current,
-      0.1,
+      0.08,
     );
     camera.position.z = 18 + currentZ.current;
     camera.lookAt(0, 0, currentZ.current - 5);
@@ -383,12 +407,12 @@ export function Roadmap3D({
                           />
                         ) : isCurrentProgress ? (
                           <div className="flex flex-col items-center animate-float">
-                            <div className="w-24 h-32 bg-slate-900 rounded-[2rem] border-4 border-yellow-400 overflow-hidden shadow-2xl">
+                            {/* <div className="w-24 h-32 bg-slate-900 rounded-[2rem] border-4 border-yellow-400 overflow-hidden shadow-2xl">
                               <Avatar3DViewer
                                 avatarFolder={avatarFolder}
                                 className="scale-110 translate-y-6"
                               />
-                            </div>
+                            </div> */}
                             <MapPin
                               className="text-yellow-400 fill-yellow-100 mt-2"
                               size={36}

@@ -21,11 +21,13 @@ export const API_CONFIG = {
     lessons: {
       signs: "/api/v1/lessons/signs",
       sign_id: (id: string) => `/api/v1/lessons/signs/${id}`,
-      complete_sign: (id: string) => `/api/v1/lessons/signs/${id}/complete`,
+      complete_sign: "/api/v1/lessons/complete",
     },
     avatar: {
       store: "/api/v1/avatars/store",
-    }
+      equip: (avatarId: number) => `/api/v1/avatars/equip/${avatarId}`,
+      buy: (avatarId: number) => `/api/v1/avatars/purchase/${avatarId}`,
+    },
   },
 };
 

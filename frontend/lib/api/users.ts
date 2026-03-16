@@ -15,6 +15,7 @@ export interface DashboardData {
   equipped_avatar_folder: string;
   coins: number;
   can_claim_daily: boolean;
+  weekly_activity: number[];
 }
 
 export const usersService = {

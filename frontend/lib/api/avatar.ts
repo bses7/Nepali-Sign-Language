@@ -21,11 +21,14 @@ export const avatarService = {
   },
 
   async buyAvatar(avatarId: number) {
-    return await apiClient.post(`/avatars/${avatarId}/buy`, {});
+    return await apiClient.post(API_CONFIG.endpoints.avatar.buy(avatarId), {});
   },
 
   async equipAvatar(avatarId: number) {
-    return await apiClient.post(`/avatars/${avatarId}/equip`, {});
+    return await apiClient.post(
+      API_CONFIG.endpoints.avatar.equip(avatarId),
+      {},
+    );
   },
 
   getThumbnailUrl(folder: string): string {

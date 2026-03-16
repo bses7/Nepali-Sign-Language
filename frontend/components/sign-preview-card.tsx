@@ -37,7 +37,7 @@ export function SignPreviewCard({
         </div>
 
         <GameButton
-          variant={isCompleted ? "primary" : "retro"}
+          variant={isCompleted ? "duolingo" : "retro"}
           size="sm"
           className="w-full py-1 "
           onClick={() => (window.location.href = `/lessons/${sign.id}`)}

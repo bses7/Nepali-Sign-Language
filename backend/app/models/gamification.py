@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, DateTime, Date
+from sqlalchemy import JSON, Column, Integer, String, ForeignKey, Table, DateTime, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.session import Base
@@ -21,6 +21,8 @@ class UserStats(Base):
     current_avatar = relationship("Avatar")
 
     last_claim_date = Column(Date, nullable=True)
+
+    weekly_activity = Column(JSON, default=list)
     
     user = relationship("User", back_populates="stats")
 

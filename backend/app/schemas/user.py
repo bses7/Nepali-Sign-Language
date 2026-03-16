@@ -66,6 +66,8 @@ class DashboardOut(BaseModel):
     equipped_avatar_folder: Optional[str]
 
     can_claim_daily: bool
+
+    weekly_activity: list[int]
     
     model_config = ConfigDict(from_attributes=True)
 

@@ -54,6 +54,7 @@ function ShopContent() {
   const [chestOpen, setChestOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [localShopError, setLocalShopError] = useState<string | null>(null);
 
   function StatBar({
     label,
@@ -105,7 +106,9 @@ function ShopContent() {
   };
 
   useEffect(() => {
-    if (dashboard) setChestOpen(!dashboard.can_claim_daily);
+    if (dashboard) {
+      setChestOpen(!dashboard.can_claim_daily);
+    }
   }, [dashboard]);
 
   useEffect(() => {
@@ -131,26 +134,50 @@ function ShopContent() {
     });
   }, [isAuthenticated, router, fetchDashboard]);
 
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [activeAnimation, setActiveAnimation] = useState("BreathingIdle");
+
   const handleAvatarAction = async (avatar: AvatarItem) => {
+    if (isProcessing) return;
+    setLocalShopError(null);
     setIsProcessing(true);
+
     try {
       if (avatar.is_owned) {
         const res = await avatarService.equipAvatar(avatar.id);
         if (res.success) {
-          toast.success(`${avatar.name} equipped!`);
-          fetchDashboard();
+          toast.success(`${avatar.name} Deployed!`);
+          await fetchDashboard();
         }
       } else {
-        if ((dashboard?.coins || 0) < avatar.price) {
-          toast.error("Not enough coins!");
+        if (userCoins < avatar.price) {
+          setLocalShopError("Insufficient coins! Go finish some lessons.");
+          toast.error("Insufficient coins");
+          setIsProcessing(false);
           return;
         }
+
         const res = await avatarService.buyAvatar(avatar.id);
+
         if (res.success) {
-          toast.success(`Purchased ${avatar.name}!`);
+          // --- START CELEBRATION ANIMATION ---
+          setActiveAnimation("Salute"); 
+          setShowCelebration(true); 
+
+          // Refresh data
           const storeRes = await avatarService.getAvatarStore();
           if (storeRes.success) setAvatars(storeRes.data || []);
-          fetchDashboard();
+          await fetchDashboard();
+
+          // Reset animation after 4 seconds
+          setTimeout(() => {
+            setShowCelebration(false);
+            setActiveAnimation("BreathingIdle");
+          }, 4000);
+        } else {
+          const errorMsg = res.error || "Transaction failed.";
+          setLocalShopError(errorMsg);
+          toast.error(errorMsg);
         }
       }
     } finally {
@@ -159,21 +186,43 @@ function ShopContent() {
   };
 
   const handleClaimDaily = async () => {
-    if (chestOpen || isClaiming || !dashboard?.can_claim_daily) return;
+    console.log("Claim Daily Attempted");
+    console.log("Current Chest State:", chestOpen);
+    console.log("Can Claim State:", dashboard?.can_claim_daily);
+
+    if (chestOpen || isClaiming) {
+      console.log("Blocked: Chest already open or currently claiming");
+      return;
+    }
+
+    if (!dashboard?.can_claim_daily) {
+      console.log("Blocked: Dashboard says user cannot claim");
+      toast.error("Already claimed today!");
+      setChestOpen(true);
+      return;
+    }
+
     setIsClaiming(true);
     try {
       const res = await usersService.claimDailyReward();
+      console.log("API Response:", res);
+
       if (res.success) {
         setChestOpen(true);
-        toast.success("Successfully claimed 100 coins!");
-        fetchDashboard();
+        toast.success("Successfully claimed 100 coins!", { icon: "💰" });
+        await fetchDashboard(); // Refresh coins
+      } else {
+        toast.error(res.error || "Failed to claim reward");
       }
+    } catch (error) {
+      console.error("Claim error:", error);
+      toast.error("Connection error to the Vault.");
     } finally {
       setIsClaiming(false);
     }
   };
 
-  if (isDashboardLoading) return <LoadingScreen />;
+  if (isDashboardLoading && !dashboard) return <LoadingScreen />;
 
   const userCoins = dashboard?.coins ?? 0;
   const displayName = dashboard?.first_name || user?.first_name || "Learner";
@@ -263,25 +312,14 @@ function ShopContent() {
         <div className="min-h-[500px]">
           {selectedTab === "avatars" && avatars.length > 0 && (
             <div className="max-w-7xl mx-auto pt-4 px-4 md:px-6">
-              {/* 1. DEFINE ANIMATION MAPPING LOGIC */}
               {(() => {
-                const getAvatarAnimation = (id: number) => {
-                  const map: Record<number, string> = {
-                    16: "BreathingIdle", // Avatar 0
-                    17: "Cheering",
-                    18: "ThoughtfulHeadNod",
-                    19: "Salute",
-                    20: "Idle",
-                  };
-                  return map[id];
-                };
-
                 const currentAvatar = avatars[currentIndex];
-                const animationForUnit = getAvatarAnimation(currentAvatar.id);
+
+                const activeAnim = showCelebration ? "Salute" : "BreathingIdle";
 
                 return (
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-                    {/* --- 1. THE COMMAND CENTER (Left on Desktop) --- */}
+                    {/* --- 1. LEFT SIDE: COMMAND CENTER (Roster & Stats) --- */}
                     <div className="lg:col-span-5 flex flex-col gap-6 order-2 lg:order-1">
                       {/* UNIT SELECTION RACK */}
                       <div className="bg-white rounded-[2rem] p-5 border-b-[10px] border-slate-200 shadow-xl space-y-4">
@@ -304,11 +342,15 @@ function ShopContent() {
                             return (
                               <button
                                 key={skin.id}
-                                onClick={() => setCurrentIndex(index)}
+                                onClick={() => {
+                                  setCurrentIndex(index);
+                                  setShowCelebration(false);
+                                  setLocalShopError(null);
+                                }}
                                 className={cn(
                                   "relative aspect-square rounded-xl overflow-hidden transition-all border-b-[3px] active:border-b-0 active:translate-y-1",
                                   isSelected
-                                    ? "bg-primary border-green-800 scale-95 shadow-[inset_0_0_12px_rgba(0,0,0,0.2)]"
+                                    ? "bg-primary border-green-800 scale-95 shadow-inner"
                                     : "bg-slate-50 border-slate-200 hover:border-primary/40",
                                 )}
                               >
@@ -324,7 +366,7 @@ function ShopContent() {
                                   alt={skin.name}
                                 />
                                 {isSelected && (
-                                  <div className="absolute inset-0 bg-primary/20" />
+                                  <div className="absolute inset-0 bg-primary/10" />
                                 )}
                                 {isEquipped && (
                                   <div className="absolute top-1 left-1 bg-white rounded-full p-0.5 shadow-md">
@@ -341,7 +383,7 @@ function ShopContent() {
                       </div>
 
                       {/* CHARACTER SPECIFICATION CARD */}
-                      <div className="bg-white rounded-[2rem] p-10 border-b-[16px] border-slate-200 shadow-2xl flex-1 flex flex-col justify-between">
+                      <div className="bg-white rounded-[2rem] p-10 border-b-[16px] border-slate-200 shadow-2xl flex-1 flex flex-col justify-between relative">
                         <div className="space-y-6">
                           <div className="flex justify-between items-start gap-4">
                             <div className="space-y-1">
@@ -373,7 +415,7 @@ function ShopContent() {
                           <p className="text-muted-foreground font-bold text-xs leading-relaxed italic border-l-4 border-primary/20 pl-4">
                             "
                             {currentAvatar.description ||
-                              `Specialized training unit programmed for ${animationForUnit} protocols.`}
+                              `Tactical instructor unit optimized for visual clarity and hand gesture synchronization.`}
                             "
                           </p>
 
@@ -384,24 +426,36 @@ function ShopContent() {
                             <div className="grid grid-cols-2 gap-6">
                               <StatBar
                                 label="Hand Clarity"
-                                value={currentIndex % 2 === 0 ? 92 : 85}
+                                value={95}
                                 color="bg-green-500"
                               />
                               <StatBar
                                 label="Sync Speed"
-                                value={currentIndex % 2 === 0 ? 78 : 94}
+                                value={90}
                                 color="bg-blue-500"
                               />
                             </div>
                           </div>
                         </div>
 
-                        <div className="pt-8">
+                        {/* ACTION AREA */}
+                        <div className="pt-8 relative z-10 flex flex-col items-center">
+                          {localShopError && (
+                            <div className="absolute -top-10 w-full animate-wiggle z-20">
+                              <div className="bg-destructive text-white px-4 py-2 rounded-xl border-b-4 border-red-900 shadow-xl text-center">
+                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                  ⚠️ {localShopError}
+                                </span>
+                              </div>
+                              <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-destructive mx-auto" />
+                            </div>
+                          )}
+
                           {Number(dashboard?.equipped_avatar_id) ===
                           currentAvatar.id ? (
                             <div className="w-full bg-slate-50 py-5 rounded-3xl text-center border-2 border-dashed border-slate-200">
                               <span className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">
-                                Fully Deployed
+                                Active in Field
                               </span>
                             </div>
                           ) : (
@@ -409,56 +463,57 @@ function ShopContent() {
                               variant={
                                 currentAvatar.is_owned ? "duolingo" : "retro"
                               }
-                              className="w-full py-2 text-2xl"
+                              className={cn(
+                                "w-full py-2 text-2xl shadow-xl",
+                                !currentAvatar.is_owned &&
+                                  userCoins < currentAvatar.price,
+                              )}
                               onClick={() => handleAvatarAction(currentAvatar)}
                               isLoading={isProcessing}
-                              disabled={
-                                !currentAvatar.is_owned &&
-                                userCoins < currentAvatar.price
-                              }
                             >
-                              {currentAvatar.is_owned ? "ACTIVATE" : "RECRUIT"}
+                              {currentAvatar.is_owned
+                                ? "EQUIP HERO"
+                                : "UNLOCK CHARACTER"}
                             </GameButton>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    {/* --- 2. THE HERO SHOWCASE (Right on Desktop) --- */}
+                    {/* --- 2. RIGHT SIDE: THE HERO SHOWCASE (3D Preview) --- */}
                     <div className="lg:col-span-7 relative group order-1 lg:order-2">
                       <div className="h-[450px] md:h-[550px] lg:h-[700px] w-full rounded-[4rem] bg-slate-950 border-4 border-white shadow-2xl overflow-hidden relative">
                         {/* HOLOGRAPHIC OVERLAYS */}
                         <div className="absolute inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.5)_100%)]" />
                         <div className="absolute inset-0 opacity-5 pointer-events-none z-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,255,255,0.05),rgba(255,255,255,0),rgba(255,255,255,0.05))] bg-[length:100%_4px,20px_100%]" />
 
+                        {/* HUD STATUS */}
                         <div className="absolute top-10 left-10 z-20 flex items-center gap-3">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_#5F7A61]" />
+                          <div
+                            className={cn(
+                              "w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px]",
+                              showCelebration
+                                ? "bg-yellow-400 shadow-yellow-400"
+                                : "bg-primary shadow-primary",
+                            )}
+                          />
                           <span className="text-white font-black text-[10px] uppercase tracking-[0.4em] opacity-80">
-                            {animationForUnit}
+                            {showCelebration ? "SUCCESS" : "PREVIEW"}
                           </span>
                         </div>
 
-                        <div className="absolute top-10 right-10 z-20 text-right bg-black/20 backdrop-blur-md p-4 rounded-3xl border border-white/5">
-                          <p className="text-white/40 font-black text-[8px] uppercase tracking-widest leading-none mb-1">
-                            Unit ID
-                          </p>
-                          <p className="text-white font-black text-xl italic tracking-widest uppercase leading-none">
-                            #{currentAvatar.id}
-                          </p>
-                        </div>
-
-                        {/* DYNAMIC ANIMATION TRIGGERED HERE */}
+                        {/* 3D VIEWER - The animation changes here automatically */}
                         <Avatar3DViewer
-                          key={`hero-${currentAvatar.id}`}
+                          key={`hero-${currentAvatar.id}-${activeAnim}`}
                           avatarFolder={currentAvatar.folder_name}
-                          animationName={animationForUnit}
-                          cameraPosition={[1, 0.5, 7.5]}
+                          animationName={activeAnim}
+                          cameraPosition={[0, 0.5, 7.5]}
                           stagePosition={[0, -2.8, 0]}
                         />
 
                         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-40 transition-all text-center">
                           <p className="text-white font-black text-[8px] uppercase tracking-[0.6em]">
-                            Inspect Hardware
+                            Rotate Model
                           </p>
                         </div>
                       </div>
@@ -514,7 +569,6 @@ function ShopContent() {
               })}
             </div>
           )}
-
           {selectedTab === "rewards" && (
             <div className="max-w-5xl mx-auto pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white rounded-[3rem] p-8 md:p-12 border-b-[12px] border-slate-200 shadow-2xl items-center">
@@ -530,13 +584,13 @@ function ShopContent() {
                     </h2>
                     <p className="text-muted-foreground font-bold text-lg leading-relaxed">
                       {chestOpen
-                        ? "You've claimed today's treasure!"
+                        ? "You've claimed today's treasure! Check back in 24 hours."
                         : "Click the chest to reveal what's inside!"}
                     </p>
                   </div>
                   <div
                     className={cn(
-                      "p-6 rounded-3xl border-2 flex items-center justify-center md:justify-start gap-4",
+                      "p-6 rounded-3xl border-2 flex items-center justify-center md:justify-start gap-4 transition-all",
                       chestOpen
                         ? "bg-green-50 border-green-200"
                         : "bg-slate-50 border-slate-100",
@@ -558,20 +612,48 @@ function ShopContent() {
                       <p className="text-2xl font-black text-foreground">
                         {chestOpen ? "Claimed" : "100 Coins"}
                       </p>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">
+                        Daily Login Bonus
+                      </p>
                     </div>
                   </div>
                 </div>
+
                 <div className="relative aspect-square w-full rounded-[2.5rem] bg-slate-950 border-4 border-slate-100 shadow-inner overflow-hidden order-1 md:order-2 group">
-                  <div className="absolute inset-0 z-20">
-                    <GameChest3D isOpen={chestOpen} onOpen={handleClaimDaily} />
+                  {/* 1. THE 3D SCENE (Purely visual now) */}
+                  <div className="absolute inset-0 z-10 pointer-events-none">
+                    <GameChest3D isOpen={chestOpen} onOpen={() => {}} />
                   </div>
+
+                  {/* 2. THE INVISIBLE CLICK OVERLAY (The Fix) */}
                   {!chestOpen && (
-                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log("Invisible overlay clicked");
+                        handleClaimDaily();
+                      }}
+                      className="absolute inset-0 z-50 w-full h-full bg-transparent cursor-pointer"
+                      aria-label="Open Chest"
+                    />
+                  )}
+
+                  {/* 3. GLOW EFFECTS (Pointer events none) */}
+                  <div
+                    className={cn(
+                      "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full blur-[100px] transition-all duration-1000 pointer-events-none z-0",
+                      chestOpen ? "bg-yellow-400/20" : "bg-blue-500/10",
+                    )}
+                  />
+
+                  {/* 4. FLOATING INDICATOR (Pointer events none) */}
+                  {!chestOpen && (
+                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center gap-1">
                       <ChevronUp
                         size={32}
                         className="text-white animate-bounce"
                       />
-                      <div className="bg-white/20 backdrop-blur-md px-6 py-2 rounded-full border-2 border-white/30">
+                      <div className="bg-white/20 backdrop-blur-md px-6 py-2 rounded-full border-2 border-white/30 animate-pulse">
                         <p className="text-white font-black text-xs uppercase tracking-widest shadow-sm">
                           Click to Open
                         </p>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GameButton } from "@/components/game-button";
+import { lessonsService } from "@/lib/api/lessons";
 import {
   XPBar,
   StreakDisplay,
@@ -24,6 +25,9 @@ import {
   Flame,
   ShoppingBag,
   BookOpen,
+  ArrowRight,
+  GraduationCap,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -89,12 +93,17 @@ export default function Dashboard() {
     fetchDashboard,
   } = useAuthStore();
 
+  const [signs, setSigns] = useState<any[]>([]);
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/login");
       return;
     }
     fetchDashboard();
+    lessonsService.getSigns().then((res) => {
+      if (res.success) setSigns(res.data || []);
+    });
   }, [isAuthenticated, router, fetchDashboard]);
 
   if (!isAuthenticated || isDashboardLoading) return <LoadingScreen />;
@@ -109,6 +118,43 @@ export default function Dashboard() {
     completed: dashboard?.completed_signs || 0,
     total: dashboard?.total_signs || 0,
   };
+
+  const vowels = signs.filter((s) => s.category === "vowel");
+  const consonants = signs.filter((s) => s.category === "consonant");
+
+  const getStats = (list: any[]) => {
+    // 1. Define the logical order of difficulties
+    const difficultyMap: Record<string, number> = {
+      easy: 1,
+      medium: 2,
+      hard: 3,
+    };
+
+    // 2. Sort the list: first by Difficulty Level, then by ID
+    const orderedList = [...list].sort((a, b) => {
+      const diffA = difficultyMap[a.difficulty?.toLowerCase()] || 1;
+      const diffB = difficultyMap[b.difficulty?.toLowerCase()] || 1;
+
+      if (diffA !== diffB) {
+        return diffA - diffB; // Easy comes before Medium, etc.
+      }
+      return a.id - b.id; // If difficulty is the same, sort by ID
+    });
+
+    const total = orderedList.length || 1;
+    const completed = orderedList.filter((s) => s.is_completed).length;
+    const percent = Math.round((completed / total) * 100);
+
+    // 3. Find the first sign that is unlocked but NOT completed in the correct order
+    const current =
+      orderedList.find((s) => !s.is_completed && !s.is_locked) ||
+      orderedList[orderedList.length - 1];
+
+    return { total, completed, percent, current };
+  };
+
+  const vStats = getStats(vowels);
+  const cStats = getStats(consonants);
 
   return (
     <div className="min-h-screen w-full bg-[#F4EDE4] text-[#2C3E33]">
@@ -211,7 +257,7 @@ export default function Dashboard() {
               {/* Row 2: NEW GAMIFIED WIDGETS (Fills the empty space) */}
               <DailyReward canClaim={dashboard?.can_claim_daily} />
 
-              <WeeklyActivity days={["Mon", "Tue", "Wed", "Thu"]} />
+              <WeeklyActivity activityDays={dashboard?.weekly_activity || []} />
             </div>
           </div>
 
@@ -255,23 +301,57 @@ export default function Dashboard() {
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {/* Continue Learning */}
-            <div className="bg-white rounded-[3rem] p-8 border-b-[12px] border-slate-200 shadow-xl space-y-6">
-              <h2 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3">
-                <BookOpen className="text-primary" /> Continue Learning
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {lessons.map((lesson: Lesson, i: number) => (
-                  <LessonCard
-                    key={i}
-                    lesson={lesson}
-                    index={i}
-                    userLevel={userStats.level}
-                  />
-                ))}
+            <div className="bg-white rounded-[3rem] p-8 border-b-[12px] border-slate-200 shadow-xl space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-black uppercase tracking-tighter flex items-center gap-3">
+                  <BookOpen className="text-primary" /> Active Quests
+                </h2>
+                <div className="bg-primary/10 px-4 py-1 rounded-full border-2 border-primary/20">
+                  <span className="text-primary font-black text-xs uppercase tracking-widest">
+                    {dashboard?.progress_percentage}% Mastery
+                  </span>
+                </div>
               </div>
-              <GameButton variant="duolingo" className="w-full py-4 text-xl">
-                Explore All Lessons
-              </GameButton>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* CARD 1: Vowel Progress (Math) */}
+                <LessonProgressCard
+                  title="Vowel"
+                  icon={<GraduationCap className="text-primary" />}
+                  stats={vStats}
+                  color="bg-primary"
+                  category="vowel"
+                />
+
+                {/* CARD 2: Consonant Progress (Math) */}
+                <LessonProgressCard
+                  title="Consonant"
+                  icon={<BookOpen className="text-secondary" />}
+                  stats={cStats}
+                  color="bg-secondary"
+                  category="consonant"
+                />
+
+                {/* CARD 3: Current Vowel Marker (Visual Location) */}
+                <CurrentMarkerCard
+                  title="Vowel"
+                  sign={vStats.current}
+                  category="vowel"
+                />
+
+                {/* CARD 4: Current Consonant Marker (Visual Location) */}
+                <CurrentMarkerCard
+                  title="Consonant"
+                  sign={cStats.current}
+                  category="consonant"
+                />
+              </div>
+
+              <Link href="/lessons" className="block">
+                <GameButton variant="duolingo" className="w-full py-2 text-xl">
+                  Explore World Map
+                </GameButton>
+              </Link>
             </div>
 
             {/* Daily Challenge */}
@@ -438,46 +518,77 @@ export default function Dashboard() {
   );
 }
 
-// Sub-component for Lessons to keep code clean
-function LessonCard({ lesson, index, userLevel }: any) {
-  const isLocked =
-    lesson.locked || (lesson.difficulty === "Advanced" && userLevel < 10);
-
+function LessonProgressCard({ title, icon, stats, color, category }: any) {
   return (
-    <div
-      className={cn(
-        "group relative p-6 rounded-3xl border-2 transition-all",
-        isLocked
-          ? "bg-slate-100 border-slate-200 opacity-60 grayscale cursor-not-allowed"
-          : "bg-white border-slate-200 border-b-8 hover:border-accent hover:-translate-y-1 cursor-pointer",
-      )}
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div
-          className={cn(
-            "p-2 rounded-xl transition-colors",
-            !isLocked && "bg-accent/10 text-accent",
-          )}
-        >
-          {isLocked ? "🔒" : <BookOpen size={20} />}
+    <Link href={`/lessons?category=${category}`} className="group block">
+      <div className="bg-slate-50 rounded-[2.5rem] p-6 border-b-8 border-slate-200 hover:border-primary/40 transition-all space-y-4">
+        <div className="flex justify-between items-center">
+          <div className="p-3 bg-white rounded-2xl border-b-4 border-slate-100">
+            {icon}
+          </div>
+          <p className="text-2xl font-black text-foreground">
+            {stats.percent}%
+          </p>
         </div>
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-          {lesson.difficulty}
-        </span>
+        <div>
+          <h4 className="font-black uppercase text-sm tracking-widest text-muted-foreground">
+            {title}
+          </h4>
+          <div className="mt-2 w-full h-3 bg-slate-200 rounded-full overflow-hidden border border-slate-300/30">
+            <div
+              className={cn("h-full transition-all duration-1000", color)}
+              style={{ width: `${stats.percent}%` }}
+            />
+          </div>
+          <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tighter">
+            {stats.completed} of {stats.total} Signs Learned
+          </p>
+        </div>
       </div>
-      <h4 className="font-black text-lg mb-4">{lesson.name}</h4>
-      {!isLocked && (
-        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-accent transition-all duration-500"
-            style={{ width: `${lesson.progress}%` }}
-          />
-        </div>
-      )}
-    </div>
+    </Link>
   );
 }
 
+// --- SUB-COMPONENT: MARKER CARDS (LOCATION-BASED) ---
+function CurrentMarkerCard({ title, sign, category }: any) {
+  return (
+    <Link href={`/lessons/${sign?.id}`} className="group block">
+      <div className="bg-slate-50 rounded-[2.5rem] p-6 border-b-8 border-slate-200 hover:border-accent transition-all flex flex-col justify-between min-h-[160px]">
+        <div className="flex justify-between items-start">
+          <MapPin className="text-accent" size={24} />
+
+          <div className="text-right">
+            <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest leading-none">
+              Continue Learning
+            </p>
+            <p className="text-xs font-black uppercase text-accent mt-1">
+              {title}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white p-3 rounded-2xl border-2 border-slate-100 flex items-center justify-between group-hover:bg-slate-50 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-2xl shadow-lg ring-2 ring-white">
+              {sign?.nepali_char || "✓"}
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase text-muted-foreground leading-none">
+                Next Sign
+              </p>
+              <h5 className="font-black uppercase text-lg leading-tight tracking-tighter">
+                {sign?.title || "Mastered!"}
+              </h5>
+            </div>
+          </div>
+          <div className="bg-[#ff9600] p-2 rounded-xl text-white border-b-4 border-[#d97900]group-hover:translate-x-1 transition-all">
+            <ArrowRight size={18} />
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
 function LoadingScreen() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background gap-4">

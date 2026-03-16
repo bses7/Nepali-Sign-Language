@@ -1,11 +1,10 @@
-# app/services/lesson_service.py
 from sqlalchemy.orm import Session
 from app.models.lesson import Sign, UserProgress, DifficultyLevel, Avatar as AvatarModel, SignCategory
 from app.models.user import User
 from fastapi import HTTPException
 
 def get_lessons_for_user(db: Session, user: User, avatar_id: int = None):
-
+    # 1. Setup Avatar
     if avatar_id:
         avatar = db.query(AvatarModel).filter(AvatarModel.id == avatar_id).first()
     else:
@@ -13,29 +12,49 @@ def get_lessons_for_user(db: Session, user: User, avatar_id: int = None):
     
     avatar_folder = avatar.folder_name if avatar else "avatar"
 
+    # 2. Get All Signs and User Progress
     all_signs = db.query(Sign).order_by(Sign.difficulty, Sign.order_index).all()
-    
     completed_sign_ids = [r[0] for r in db.query(UserProgress.sign_id).filter(
         UserProgress.user_id == user.id, UserProgress.is_completed == True).all()]
 
-    easy_signs = [s for s in all_signs if s.difficulty == DifficultyLevel.EASY]
-    medium_signs = [s for s in all_signs if s.difficulty == DifficultyLevel.MEDIUM]
-    all_easy_done = all(s.id in completed_sign_ids for s in easy_signs) if easy_signs else True
-    all_medium_done = all(s.id in completed_sign_ids for s in medium_signs) if medium_signs else True
+    # 3. CALCULATE COMPLETION PER CATEGORY (The New Logic)
+    # This checks if a user has finished all signs of a specific level within a specific category
+    def is_difficulty_finished(category: SignCategory, difficulty: DifficultyLevel):
+        signs_in_group = [s for s in all_signs if s.category == category and s.difficulty == difficulty]
+        if not signs_in_group:
+            return True
+        return all(s.id in completed_sign_ids for s in signs_in_group)
+
+    # Pre-calculate statuses to avoid repetitive loops inside the main loop
+    completion_status = {
+        SignCategory.VOWEL: {
+            "easy_done": is_difficulty_finished(SignCategory.VOWEL, DifficultyLevel.EASY),
+            "medium_done": is_difficulty_finished(SignCategory.VOWEL, DifficultyLevel.MEDIUM),
+        },
+        SignCategory.CONSONANT: {
+            "easy_done": is_difficulty_finished(SignCategory.CONSONANT, DifficultyLevel.EASY),
+            "medium_done": is_difficulty_finished(SignCategory.CONSONANT, DifficultyLevel.MEDIUM),
+        }
+    }
 
     lessons = []
     for sign in all_signs:
+        # 4. CATEGORY-SPECIFIC LOCKING LOGIC
         is_locked = False
-        if sign.difficulty == DifficultyLevel.MEDIUM and not all(s.id in completed_sign_ids for s in [s for s in all_signs if s.difficulty == DifficultyLevel.EASY]):
-            is_locked = True
-        elif sign.difficulty == DifficultyLevel.HARD and not all(s.id in completed_sign_ids for s in [s for s in all_signs if s.difficulty == DifficultyLevel.MEDIUM]):
-            is_locked = True
+        cat_status = completion_status.get(sign.category)
+
+        if sign.difficulty == DifficultyLevel.MEDIUM:
+            # Medium only locks if Easy of the SAME category isn't done
+            if not cat_status["easy_done"]:
+                is_locked = True
+        elif sign.difficulty == DifficultyLevel.HARD:
+            # Hard only locks if Medium of the SAME category isn't done
+            if not cat_status["medium_done"]:
+                is_locked = True
             
-        if sign.category == SignCategory.VOWEL:
-            filename = f"S1_NSL_Vowel_Unprepared_Bright_S1_{sign.sign_code}_animated.glb"
-        else:
-            filename = f"S1_NSL_Consonant_Bright_S1_{sign.sign_code}_animated.glb"
-        
+        # 5. Build URL
+        type_str = "Vowel_Unprepared" if sign.category == SignCategory.VOWEL else "Consonant"
+        filename = f"S1_NSL_{type_str}_Bright_S1_{sign.sign_code}_animated.glb"
         model_url = f"/static/avatars/{avatar_folder}/{filename}"
             
         lessons.append({
@@ -52,10 +71,31 @@ def get_lessons_for_user(db: Session, user: User, avatar_id: int = None):
     return lessons
 
 def get_sign_by_id(db: Session, user: User, sign_id: int):
+    # 1. Fetch the sign
     sign = db.query(Sign).filter(Sign.id == sign_id).first()
     if not sign:
         raise HTTPException(status_code=404, detail="Sign not found")
 
+    # 2. SECURITY CHECK: Verify if this specific sign should be locked
+    # We re-run the category-specific check for security
+    all_signs_in_cat = db.query(Sign).filter(Sign.category == sign.category).all()
+    completed_ids = [r[0] for r in db.query(UserProgress.sign_id).filter(
+        UserProgress.user_id == user.id, UserProgress.is_completed == True).all()]
+
+    def check_lock(diff_to_check):
+        group = [s.id for s in all_signs_in_cat if s.difficulty == diff_to_check]
+        return all(sid in completed_ids for sid in group) if group else True
+
+    is_locked = False
+    if sign.difficulty == DifficultyLevel.MEDIUM and not check_lock(DifficultyLevel.EASY):
+        is_locked = True
+    elif sign.difficulty == DifficultyLevel.HARD and not check_lock(DifficultyLevel.MEDIUM):
+        is_locked = True
+
+    if is_locked:
+        raise HTTPException(status_code=403, detail="This lesson is locked. Complete the previous level first.")
+
+    # 3. Build details
     avatar = user.stats.current_avatar
     avatar_folder = avatar.folder_name if avatar else "avatar"
     
@@ -73,4 +113,3 @@ def get_sign_by_id(db: Session, user: User, sign_id: int):
         "animation_name": f"{sign.sign_code}_anim", 
         "description": sign.description 
     }
-

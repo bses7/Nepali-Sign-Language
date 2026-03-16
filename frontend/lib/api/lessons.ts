@@ -10,7 +10,9 @@ export const lessonsService = {
     return await apiClient.get<any>(API_CONFIG.endpoints.lessons.sign_id(id));
   },
 
-  async completeSign(id: string) {
-    return await apiClient.post(API_CONFIG.endpoints.lessons.complete_sign(id), {});
+  async completeSign(signId: number) {
+    return await apiClient.post(API_CONFIG.endpoints.lessons.complete_sign, {
+      sign_id: signId,
+    });
   },
 };

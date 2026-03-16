@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react"; 
 import { useAuthStore } from "@/lib/store/auth";
 import { lessonsService } from "@/lib/api/lessons";
 import { GameButton } from "@/components/game-button";
@@ -8,6 +8,7 @@ import { GameHeader } from "@/components/game-header";
 import { Roadmap3D } from "@/components/roadmap";
 import { CoinDisplay } from "@/components/game-stats";
 import { GameShopIcon } from "@/components/icons/game-shop-icon";
+import { useSearchParams } from "next/navigation";
 import {
   GraduationCap,
   BookOpen,
@@ -15,18 +16,36 @@ import {
   HelpCircle,
   X,
   Lightbulb,
+  MousePointer2,
+  MoveVertical,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-export default function LessonsPage() {
+// 1. Move all logic into a sub-component
+function LessonsContent() {
+  const searchParams = useSearchParams();
+  const urlCategory = searchParams.get("category") as
+    | "vowel"
+    | "consonant"
+    | null;
+
+  // 2. Initialize state directly from URL to prevent flickering
   const [selectedCategory, setSelectedCategory] = useState<
     "vowel" | "consonant" | null
-  >(null);
+  >(urlCategory || null);
+
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [signs, setSigns] = useState<any[]>([]);
   const { isAuthenticated, dashboard, fetchDashboard } = useAuthStore();
   const [selectedSign, setSelectedSign] = useState<any>(null);
+
+  // Sync state if URL changes while on the page
+  useEffect(() => {
+    if (urlCategory) {
+      setSelectedCategory(urlCategory);
+    }
+  }, [urlCategory]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -105,11 +124,8 @@ export default function LessonsPage() {
         >
           <ArrowLeft size={24} strokeWidth={3} />
         </GameButton>
-
         <div className="flex items-center gap-4">
           <CoinDisplay amount={dashboard?.coins ?? 0} />
-
-          {/* RESTORED SHOP BUTTON STYLE */}
           <Link href="/shop" className="group">
             <button
               className={cn(
@@ -133,12 +149,11 @@ export default function LessonsPage() {
         </div>
       </div>
 
-      {/* THREE.JS ROADMAP ENGINE */}
       <Roadmap3D
         signs={filteredSigns}
         avatarFolder={dashboard?.equipped_avatar_folder}
-        selectedSign={selectedSign} // Pass selected sign
-        onLevelClick={(sign: any) => setSelectedSign(sign)} // Set selected on click
+        selectedSign={selectedSign}
+        onLevelClick={(sign: any) => setSelectedSign(sign)}
       />
 
       {/* HELP BUTTON */}
@@ -157,19 +172,16 @@ export default function LessonsPage() {
       {isHelpOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
           <div className="bg-white rounded-[3rem] w-full max-w-md p-10 border-b-[12px] border-slate-200 shadow-2xl relative animate-pop-spin">
-            {/* Close Button */}
             <button
               onClick={() => setIsHelpOpen(false)}
               className="absolute -top-4 -right-4 bg-red-500 text-white p-2 rounded-xl border-b-4 border-red-700 active:translate-y-1 active:border-b-0 transition-all z-[10000]"
             >
               <X size={24} />
             </button>
-
             <div className="text-center space-y-6">
               <div className="inline-block bg-yellow-100 p-5 rounded-[2rem] border-b-4 border-yellow-200">
                 <Lightbulb size={48} className="text-yellow-500" />
               </div>
-
               <h3 className="font-display text-4xl font-black uppercase tracking-tighter text-foreground leading-none">
                 Map Guide
               </h3>
@@ -180,7 +192,7 @@ export default function LessonsPage() {
                     1
                   </div>
                   <p className="text-sm font-bold text-muted-foreground">
-                    Click any unlocked node to start learning a sign.
+                    Click any unlocked node to start a lesson.
                   </p>
                 </div>
                 <div className="flex gap-4 p-4 bg-slate-50 rounded-2xl border-b-4 border-slate-100">
@@ -188,16 +200,23 @@ export default function LessonsPage() {
                     2
                   </div>
                   <p className="text-sm font-bold text-muted-foreground">
-                    Complete <span className="text-primary">Level 1</span> signs
-                    to unlock <span className="text-accent">Level 2</span> and
-                    beyond!
+                    Complete Level 1 signs to unlock next tiers!
+                  </p>
+                </div>
+                {/* Integrated Drag/Zoom into guide */}
+                <div className="flex gap-4 p-4 bg-blue-50 rounded-2xl border-b-4 border-blue-100">
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center">
+                    <MousePointer2 size={16} />
+                  </div>
+                  <p className="text-sm font-bold text-blue-900">
+                    Drag up/down or use arrows to move. Scroll to Zoom.
                   </p>
                 </div>
               </div>
 
               <GameButton
                 variant="duolingo"
-                className="w-full py-6 text-2xl"
+                className="w-full py-2 text-2xl"
                 onClick={() => setIsHelpOpen(false)}
               >
                 GOT IT!
@@ -207,5 +226,23 @@ export default function LessonsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// 3. Main Export wrapped in Suspense
+export default function LessonsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background gap-4">
+          <div className="w-16 h-16 border-8 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <p className="font-black uppercase tracking-widest text-primary animate-pulse">
+            Entering Dojo...
+          </p>
+        </div>
+      }
+    >
+      <LessonsContent />
+    </Suspense>
   );
 }

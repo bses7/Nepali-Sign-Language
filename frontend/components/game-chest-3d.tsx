@@ -66,6 +66,14 @@ function TreasureChest({
     );
   });
 
+  const handleInteraction = (e: any) => {
+    e.stopPropagation();
+    if (!isOpen) {
+      console.log("Chest clicked!");
+      onClick();
+    }
+  };
+
   const metalMat = (
     <meshStandardMaterial color="#1A261E" metalness={0.8} roughness={0.8} />
   );
@@ -75,14 +83,8 @@ function TreasureChest({
   const sageMat = <meshStandardMaterial color="#5F7A61" roughness={0.8} />;
 
   return (
-    <group
-      rotation={[0, -0.4, 0]}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-    >
-      <group position={[0, 0.35, 0]}>
+    <group rotation={[0, -0.4, 0]}>
+      <group position={[0, 0.35, 0]} onPointerDown={handleInteraction}>
         <RoundedBox
           args={[1.6, 0.8, 1.2]}
           radius={0.05}
@@ -133,7 +135,11 @@ function TreasureChest({
           </mesh>
         ))}
       </group>
-      <group ref={lid} position={[0, 0.75, -0.6]}>
+      <group
+        ref={lid}
+        position={[0, 0.75, -0.6]}
+        onPointerDown={handleInteraction}
+      >
         <group position={[0, 0.2, 0.6]}>
           <RoundedBox
             args={[1.7, 0.5, 1.3]}
