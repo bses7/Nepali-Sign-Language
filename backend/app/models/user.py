@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum
 from sqlalchemy.sql import func
 from app.db.session import Base
 from sqlalchemy.orm import relationship
+from app.models.lesson import user_avatars 
 
 class UserRole(str, enum.Enum):
     STUDENT = "student"
@@ -33,3 +34,10 @@ class User(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    owned_avatars = relationship(
+        "Avatar", 
+        secondary=user_avatars, 
+        backref="owners"
+    )
+

@@ -36,17 +36,21 @@ def complete_lesson(
         progress.is_completed = True
 
     user_service.update_streak(db, current_user.stats)    
-    XP_PER_LESSON = 10
+    XP_PER_LESSON = 500
     current_user.stats.xp += XP_PER_LESSON
     
-    new_level = (current_user.stats.xp // 100) + 1
+    new_level = (current_user.stats.xp // 1000) + 1
     if new_level > current_user.stats.level:
         current_user.stats.level = new_level
     
-    gamification_service.check_and_award_badges(db, current_user)
+    new_badges = gamification_service.check_and_award_badges(db, current_user)
+
+    sign = db.query(Sign).filter(Sign.id == data.sign_id).first()
+    
+    user_service.update_daily_challenge(db, current_user.stats, sign)
 
     db.commit()
-    return {"message": "Progress saved", "new_xp": current_user.stats.xp, "level": current_user.stats.level}
+    return {"message": "Progress saved", "new_xp": current_user.stats.xp, "level": current_user.stats.level, "new_badges": new_badges}
 
 @router.get("/avatars", response_model=List[AvatarSchema])
 def get_available_avatars(db: Session = Depends(get_db)):

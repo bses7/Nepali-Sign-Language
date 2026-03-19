@@ -55,6 +55,7 @@ function ShopContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [localShopError, setLocalShopError] = useState<string | null>(null);
+  const [badgesList, setBadgesList] = useState<any[]>([]);
 
   function StatBar({
     label,
@@ -128,14 +129,13 @@ function ShopContent() {
       if (res.success) setAvatars(res.data || []);
     });
 
-    usersService.getUserBadges().then((res) => {
-      if (res.success)
-        setOwnedBadges(res.data?.map((b: any) => b.badge_code) || []);
+    usersService.getAllBadges().then((res) => {
+      if (res.success) setBadgesList(res.data || []);
     });
   }, [isAuthenticated, router, fetchDashboard]);
 
   const [showCelebration, setShowCelebration] = useState(false);
-  const [activeAnimation, setActiveAnimation] = useState("BreathingIdle");
+  const [activeAnimation, setActiveAnimation] = useState("Idle");
 
   const handleAvatarAction = async (avatar: AvatarItem) => {
     if (isProcessing) return;
@@ -146,7 +146,7 @@ function ShopContent() {
       if (avatar.is_owned) {
         const res = await avatarService.equipAvatar(avatar.id);
         if (res.success) {
-          toast.success(`${avatar.name} Deployed!`);
+          toast.success(`${avatar.name} Equipped!`);
           await fetchDashboard();
         }
       } else {
@@ -160,19 +160,16 @@ function ShopContent() {
         const res = await avatarService.buyAvatar(avatar.id);
 
         if (res.success) {
-          // --- START CELEBRATION ANIMATION ---
-          setActiveAnimation("Salute"); 
-          setShowCelebration(true); 
+          setActiveAnimation("Salute");
+          setShowCelebration(true);
 
-          // Refresh data
           const storeRes = await avatarService.getAvatarStore();
           if (storeRes.success) setAvatars(storeRes.data || []);
           await fetchDashboard();
 
-          // Reset animation after 4 seconds
           setTimeout(() => {
             setShowCelebration(false);
-            setActiveAnimation("BreathingIdle");
+            setActiveAnimation("Idle");
           }, 4000);
         } else {
           const errorMsg = res.error || "Transaction failed.";
@@ -209,8 +206,10 @@ function ShopContent() {
 
       if (res.success) {
         setChestOpen(true);
-        toast.success("Successfully claimed 100 coins!", { icon: "💰" });
-        await fetchDashboard(); // Refresh coins
+        toast.success("Congratulations! You’ve claimed 100 coins.", {
+          icon: "💰",
+        });
+        await fetchDashboard();
       } else {
         toast.error(res.error || "Failed to claim reward");
       }
@@ -315,7 +314,7 @@ function ShopContent() {
               {(() => {
                 const currentAvatar = avatars[currentIndex];
 
-                const activeAnim = showCelebration ? "Salute" : "BreathingIdle";
+                const activeAnim = showCelebration ? "Salute" : "Idle";
 
                 return (
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
@@ -325,7 +324,7 @@ function ShopContent() {
                       <div className="bg-white rounded-[2rem] p-5 border-b-[10px] border-slate-200 shadow-xl space-y-4">
                         <div className="flex items-center justify-between px-2">
                           <h3 className="font-black uppercase text-[10px] tracking-widest text-primary">
-                            Unit Selection Rack
+                            Characters
                           </h3>
                           <div className="bg-slate-100 px-2 py-0.5 rounded-full">
                             <span className="text-[9px] font-black text-slate-500 uppercase">
@@ -383,79 +382,154 @@ function ShopContent() {
                       </div>
 
                       {/* CHARACTER SPECIFICATION CARD */}
-                      <div className="bg-white rounded-[2rem] p-10 border-b-[16px] border-slate-200 shadow-2xl flex-1 flex flex-col justify-between relative">
-                        <div className="space-y-6">
-                          <div className="flex justify-between items-start gap-4">
+                      {/* CHARACTER SPECIFICATION CARD */}
+                      <div className="bg-white rounded-[2.5rem] p-6 border-b-[12px] border-slate-200 shadow-2xl flex-1 flex flex-col justify-between relative overflow-hidden">
+                        {/* Blueprint Background Effect */}
+                        <div
+                          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                          style={{
+                            backgroundImage: `radial-gradient(#2C3E33 1px, transparent 1px)`,
+                            backgroundSize: "20px 20px",
+                          }}
+                        />
+
+                        <div className="space-y-5 relative z-10">
+                          {/* 1. IDENTITY HEADER */}
+                          <div className="flex justify-between items-start">
                             <div className="space-y-1">
-                              <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-foreground leading-none">
+                              <div className="flex items-center gap-2">
+                                {(() => {
+                                  const type =
+                                    currentAvatar.attributes?.type?.toLowerCase() ||
+                                    "common";
+                                  const rarityConfigs = {
+                                    common:
+                                      "bg-gray-50 text-gray-500 border-gray-100",
+                                    rare: "bg-orange-50 text-orange-600 border-orange-200",
+                                    legendary:
+                                      "bg-purple-50 text-purple-600 border-purple-200",
+                                  };
+                                  const config =
+                                    rarityConfigs[
+                                      type as keyof typeof rarityConfigs
+                                    ] || rarityConfigs.common;
+
+                                  return (
+                                    <span
+                                      className={cn(
+                                        "text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full border shadow-sm",
+                                        config,
+                                      )}
+                                    >
+                                      {type} Class
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                              <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-800 leading-none">
                                 {currentAvatar.name}
                               </h2>
-                              <div className="flex gap-2">
-                                <span
-                                  className={cn(
-                                    "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md",
-                                    currentAvatar.price === 0
-                                      ? "bg-slate-100 text-slate-500"
-                                      : "bg-yellow-100 text-yellow-600",
-                                  )}
-                                >
-                                  {currentAvatar.price === 0
-                                    ? "Starter Unit"
-                                    : "Legendary Model"}
-                                </span>
-                              </div>
                             </div>
+
                             {!currentAvatar.is_owned && (
-                              <div className="bg-yellow-400 text-yellow-900 px-4 py-2 rounded-2xl border-b-4 border-yellow-600 font-black text-xl shadow-lg">
+                              <div className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-xl border-b-4 border-yellow-600 font-black text-lg shadow-md transform rotate-2">
                                 {currentAvatar.price} 💰
                               </div>
                             )}
                           </div>
 
-                          <p className="text-muted-foreground font-bold text-xs leading-relaxed italic border-l-4 border-primary/20 pl-4">
-                            "
-                            {currentAvatar.description ||
-                              `Tactical instructor unit optimized for visual clarity and hand gesture synchronization.`}
-                            "
-                          </p>
+                          {/* 2. VISUAL DNA (Colors) */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <AttributeChip
+                              label="Skin"
+                              color={currentAvatar.attributes?.skin_color}
+                              value={currentAvatar.attributes?.skin_color}
+                            />
+                            <AttributeChip
+                              label="Hair"
+                              color={currentAvatar.attributes?.hair_color}
+                              value={currentAvatar.attributes?.hair_color}
+                            />
+                            <AttributeChip
+                              label="Eyes"
+                              color={currentAvatar.attributes?.eye_color}
+                              value={currentAvatar.attributes?.eye_color}
+                            />
+                            <AttributeChip
+                              label="Outfit"
+                              color={currentAvatar.attributes?.clothing_color}
+                              value={currentAvatar.attributes?.clothing_color}
+                            />
+                          </div>
 
-                          <div className="space-y-4 pt-2">
-                            <p className="text-[10px] font-black uppercase text-primary tracking-[0.2em]">
-                              Calibration Data
-                            </p>
-                            <div className="grid grid-cols-2 gap-6">
-                              <StatBar
-                                label="Hand Clarity"
-                                value={95}
-                                color="bg-green-500"
-                              />
-                              <StatBar
-                                label="Sync Speed"
-                                value={90}
-                                color="bg-blue-500"
-                              />
+                          {/* 3. PHYSICAL SPECIFICATIONS (Face + Hardware) */}
+                          <div className="bg-slate-50 rounded-2xl border-b-2 border-slate-100 overflow-hidden">
+                            {/* Face Row */}
+                            <div className="p-3 border-b border-white flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-slate-200 text-primary shadow-sm">
+                                <Sparkles size={16} strokeWidth={2.5} />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">
+                                  Face Shape
+                                </span>
+                                <span className="text-xs font-bold text-slate-700 capitalize">
+                                  {currentAvatar.attributes?.face_shape?.replace(
+                                    "_",
+                                    " ",
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Hardware Row */}
+                            <div className="p-3 bg-slate-50/50">
+                              <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                                Hardware Mods
+                              </span>
+                              <div className="flex flex-wrap gap-1.5">
+                                {currentAvatar.attributes?.accessories?.length >
+                                0 ? (
+                                  currentAvatar.attributes.accessories.map(
+                                    (acc: string) => (
+                                      <div
+                                        key={acc}
+                                        className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm"
+                                      >
+                                        <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
+                                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-tight">
+                                          {acc.replace("_", " ")}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )
+                                ) : (
+                                  <span className="text-[9px] font-bold text-slate-400 italic px-1">
+                                    Standard Config
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
 
                         {/* ACTION AREA */}
-                        <div className="pt-8 relative z-10 flex flex-col items-center">
+                        <div className="pt-4 relative z-10">
                           {localShopError && (
-                            <div className="absolute -top-10 w-full animate-wiggle z-20">
-                              <div className="bg-destructive text-white px-4 py-2 rounded-xl border-b-4 border-red-900 shadow-xl text-center">
-                                <span className="text-[10px] font-black uppercase tracking-widest">
+                            <div className="absolute -top-8 left-0 right-0 animate-wiggle z-20">
+                              <div className="bg-destructive text-white px-3 py-1.5 rounded-lg border-b-2 border-red-900 shadow-lg text-center">
+                                <span className="text-[9px] font-black uppercase">
                                   ⚠️ {localShopError}
                                 </span>
                               </div>
-                              <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-destructive mx-auto" />
                             </div>
                           )}
 
                           {Number(dashboard?.equipped_avatar_id) ===
                           currentAvatar.id ? (
-                            <div className="w-full bg-slate-50 py-5 rounded-3xl text-center border-2 border-dashed border-slate-200">
-                              <span className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">
-                                Active in Field
+                            <div className="w-full bg-gray-50 py-6 rounded-2xl text-center border-2 border-dashed border-gray-200 flex items-center justify-center gap-2">
+                              <span className="text-gray-600 font-black uppercase tracking-[0.1em] text-xl">
+                                Equipped
                               </span>
                             </div>
                           ) : (
@@ -464,16 +538,16 @@ function ShopContent() {
                                 currentAvatar.is_owned ? "duolingo" : "retro"
                               }
                               className={cn(
-                                "w-full py-2 text-2xl shadow-xl",
+                                "w-full py-2 text-xl shadow-lg transition-all active:scale-95",
                                 !currentAvatar.is_owned &&
-                                  userCoins < currentAvatar.price,
+                                  (dashboard?.coins || 0) <
+                                    currentAvatar.price &&
+                                  "opacity-50 grayscale",
                               )}
                               onClick={() => handleAvatarAction(currentAvatar)}
                               isLoading={isProcessing}
                             >
-                              {currentAvatar.is_owned
-                                ? "EQUIP HERO"
-                                : "UNLOCK CHARACTER"}
+                              {currentAvatar.is_owned ? "DEPLOY" : "PURCHASE"}
                             </GameButton>
                           )}
                         </div>
@@ -508,7 +582,7 @@ function ShopContent() {
                           avatarFolder={currentAvatar.folder_name}
                           animationName={activeAnim}
                           cameraPosition={[0, 0.5, 7.5]}
-                          stagePosition={[0, -2.8, 0]}
+                          stagePosition={[0, -2.5, 0.1]}
                         />
 
                         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-40 transition-all text-center">
@@ -525,50 +599,90 @@ function ShopContent() {
           )}
 
           {selectedTab === "badges" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {backendBadges.map((badge) => {
-                const isOwned = ownedBadges.includes(badge.code);
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {badgesList.map((badge) => {
+                // Logic: Use is_earned directly from backend
+                const isEarned = badge.is_earned;
+                // Construct full URL for icon
+                const iconUrl = badge.icon_url.startsWith("http")
+                  ? badge.icon_url
+                  : `http://localhost:8000${badge.icon_url}`;
+
                 return (
                   <div
-                    key={badge.code}
+                    key={badge.badge_code}
                     className={cn(
-                      "bg-white rounded-[2.5rem] p-8 border-b-8 border-slate-200 shadow-xl flex flex-col items-center text-center gap-4 transition-all",
-                      !isOwned && "grayscale opacity-70",
+                      "bg-white rounded-[2.5rem] p-8 border-b-8 border-slate-200 shadow-xl flex flex-col items-center text-center gap-5 transition-all duration-500",
+                      !isEarned && "grayscale opacity-60",
                     )}
                   >
-                    <div
-                      className={cn(
-                        "w-24 h-24 rounded-full flex items-center justify-center text-5xl shadow-inner border-4",
-                        isOwned
-                          ? "bg-yellow-50 border-yellow-200"
-                          : "bg-slate-100 border-slate-200",
+                    {/* BADGE ICON CONTAINER */}
+                    <div className="relative group/badge">
+                      <div
+                        className={cn(
+                          "w-28 h-28 rounded-full flex items-center justify-center p-4 shadow-inner border-4 transition-transform group-hover/badge:scale-110",
+                          isEarned
+                            ? "bg-yellow-50 border-yellow-200"
+                            : "bg-slate-100 border-slate-200",
+                        )}
+                      >
+                        <img
+                          src={iconUrl}
+                          alt={badge.name}
+                          className="w-full h-full object-contain drop-shadow-md"
+                          onError={(e) => {
+                            // Fallback to a placeholder if image fails to load
+                            (e.target as HTMLImageElement).src =
+                              "https://ui-avatars.com/api/?name=" + badge.name;
+                          }}
+                        />
+                      </div>
+
+                      {/* Sparkle effect for earned badges */}
+                      {isEarned && (
+                        <Sparkles
+                          className="absolute -top-2 -right-2 text-yellow-400 animate-pulse"
+                          size={24}
+                        />
                       )}
-                    >
-                      {badge.icon}
                     </div>
-                    <div>
-                      <h3 className="font-black uppercase tracking-tight text-xl">
+
+                    {/* BADGE INFO */}
+                    <div className="space-y-2">
+                      <h3 className="font-black uppercase tracking-tight text-xl text-foreground">
                         {badge.name}
                       </h3>
-                      <p className="text-sm text-muted-foreground font-medium px-4">
-                        {badge.desc}
+                      <p className="text-xs text-muted-foreground font-bold leading-relaxed px-4">
+                        {badge.description}
                       </p>
                     </div>
-                    <div
-                      className={cn(
-                        "px-4 py-1 rounded-full font-black text-[10px] uppercase tracking-widest",
-                        isOwned
-                          ? "bg-primary/10 text-primary"
-                          : "bg-slate-100 text-muted-foreground",
+
+                    {/* STATUS FOOTER */}
+                    <div className="w-full pt-2 border-t border-slate-50 flex flex-col items-center gap-2">
+                      <div
+                        className={cn(
+                          "px-6 py-1.5 rounded-full font-black text-[10px] uppercase tracking-[0.2em] shadow-sm",
+                          isEarned
+                            ? "bg-primary/10 text-primary border border-primary/20"
+                            : "bg-slate-100 text-slate-400 border border-slate-200",
+                        )}
+                      >
+                        {isEarned ? "Unlocked" : "Locked"}
+                      </div>
+
+                      {isEarned && badge.earned_at && (
+                        <p className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-widest">
+                          Earned:{" "}
+                          {new Date(badge.earned_at).toLocaleDateString()}
+                        </p>
                       )}
-                    >
-                      {isOwned ? "Unlocked" : "Locked"}
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
+
           {selectedTab === "rewards" && (
             <div className="max-w-5xl mx-auto pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white rounded-[3rem] p-8 md:p-12 border-b-[12px] border-slate-200 shadow-2xl items-center">
@@ -739,6 +853,43 @@ function ShopContent() {
           </Link>
         </div>
       </main>
+    </div>
+  );
+}
+
+function AttributeChip({
+  label,
+  value,
+  color,
+  icon: Icon,
+}: {
+  label: string;
+  value?: string;
+  color?: string;
+  icon?: any;
+}) {
+  return (
+    <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border-b-2 border-slate-100 hover:bg-slate-100 transition-colors group">
+      <div className="relative shrink-0">
+        {color ? (
+          <div
+            className="w-8 h-8 rounded-lg border-2 border-white shadow-sm ring-1 ring-slate-200"
+            style={{ backgroundColor: color }}
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center border-2 border-slate-100 text-primary">
+            {Icon && <Icon size={14} strokeWidth={2.5} />}
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col min-w-0">
+        <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+          {label}
+        </span>
+        <span className="text-[10px] font-bold text-slate-700 capitalize truncate">
+          {value || color || "N/A"}
+        </span>
+      </div>
     </div>
   );
 }

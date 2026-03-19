@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { GameShopIcon } from "@/components/icons/game-shop-icon";
 
 export default function LeaderboardPage() {
   const router = useRouter();
@@ -70,10 +71,28 @@ export default function LeaderboardPage() {
           </div>
           <div className="flex items-center gap-4">
             <CoinDisplay amount={dashboard?.coins || 0} />
-            <Link href="/shop" className="hidden md:block">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-secondary/10 border-b-4 border-secondary text-secondary font-black uppercase text-xs transition-all active:translate-y-1 active:border-b-0">
-                <ShoppingBag size={18} />
-                <span>Shop</span>
+            <Link href="/shop" className="hidden md:block group">
+              <button
+                className={cn(
+                  "relative flex items-center gap-3 px-6 py-2.5 rounded-2xl transition-all duration-75",
+                  "bg-white border-b-4 border-slate-200 hover:border-blue-400 active:border-b-0 active:translate-y-1 shadow-lg",
+                )}
+              >
+                <div className="w-8 h-8 group-hover:scale-110 group-hover:rotate-6 transition-transform ">
+                  <GameShopIcon />
+                </div>
+
+                <div className="flex flex-col items-start leading-none">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    Market
+                  </span>
+                  <span className="text-sm font-black uppercase text-blue-600">
+                    Avatar Shop
+                  </span>
+                </div>
+
+                {/* Small Notification Dot (Optional Gamified Detail) */}
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
               </button>
             </Link>
             <ProfileDropdown userName={displayName} />

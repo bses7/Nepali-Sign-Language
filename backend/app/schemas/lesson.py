@@ -8,6 +8,8 @@ class Avatar(BaseModel):
     folder_name: str 
     price: int
     is_owned: bool = False
+
+    attributes: Optional[dict] = None
     
     model_config = ConfigDict(from_attributes=True)
 

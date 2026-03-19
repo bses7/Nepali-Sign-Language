@@ -16,6 +16,11 @@ export interface DashboardData {
   coins: number;
   can_claim_daily: boolean;
   weekly_activity: number[];
+  challenge_title: string;
+  challenge_description: string;
+  challenge_progress: number;
+  challenge_target: number;
+  can_claim_challenge: boolean;
 }
 
 export const usersService = {
@@ -49,7 +54,15 @@ export const usersService = {
     return await apiClient.get<any[]>(API_CONFIG.endpoints.users.badges);
   },
 
+  async getAllBadges() {
+    return await apiClient.get<any[]>(API_CONFIG.endpoints.users.badgesall);
+  },
+
   async claimDailyReward() {
     return await apiClient.post(API_CONFIG.endpoints.users.claim);
+  },
+
+  async claimChallengeReward() {
+    return await apiClient.post(API_CONFIG.endpoints.users.claim_challenge, {});
   },
 };

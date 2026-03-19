@@ -28,10 +28,14 @@ import {
   ArrowRight,
   GraduationCap,
   MapPin,
+  Lock,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { GameShopIcon } from "@/components/icons/game-shop-icon";
+import { usersService } from "@/lib/api/users";
+import { toast } from "sonner";
 
 interface Lesson {
   name: string;
@@ -67,15 +71,6 @@ const lessons: Lesson[] = [
   },
 ];
 
-const achievements = [
-  { icon: "🎯", isUnlocked: true },
-  { icon: "🔥", isUnlocked: true },
-  { icon: "⭐", isUnlocked: true },
-  { icon: "👑", isUnlocked: false },
-  { icon: "🏆", isUnlocked: false },
-  { icon: "🎓", isUnlocked: false },
-];
-
 const leaderboardData = [
   { rank: 1, name: "Alex", level: 15, isYou: false },
   { rank: 2, name: "Jordan", level: 14, isYou: false },
@@ -94,6 +89,11 @@ export default function Dashboard() {
   } = useAuthStore();
 
   const [signs, setSigns] = useState<any[]>([]);
+  const [badges, setBadges] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+
+  const [showChallengeError, setShowChallengeError] = useState(false);
+  const [isClaimingChallenge, setIsClaimingChallenge] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -104,7 +104,47 @@ export default function Dashboard() {
     lessonsService.getSigns().then((res) => {
       if (res.success) setSigns(res.data || []);
     });
+    usersService.getAllBadges().then((res) => {
+      if (res.success && res.data) {
+        const sorted = [...res.data].sort((a, b) => {
+          if (a.is_earned === b.is_earned) return 0;
+          return a.is_earned ? -1 : 1;
+        });
+        setBadges(sorted);
+      }
+    });
+    usersService.getLeaderboard().then((res) => {
+      if (res.success && res.data) {
+        setLeaderboard((res.data as any).top_users || []);
+      }
+    });
   }, [isAuthenticated, router, fetchDashboard]);
+
+  const handleClaimChallenge = async () => {
+    if (isClaimingChallenge) return;
+
+    if (!dashboard?.can_claim_challenge) {
+      setShowChallengeError(true);
+      setTimeout(() => setShowChallengeError(false), 3000);
+      return;
+    }
+
+    setIsClaimingChallenge(true);
+    try {
+      const res = await usersService.claimChallengeReward();
+      if (res.success) {
+        toast.success("Challenge Reward Claimed!", {
+          description: "+250 Coins and +500XP earned!",
+          icon: "🎁",
+        });
+        fetchDashboard();
+      } else {
+        toast.error(res.error || "Failed to claim reward");
+      }
+    } finally {
+      setIsClaimingChallenge(false);
+    }
+  };
 
   if (!isAuthenticated || isDashboardLoading) return <LoadingScreen />;
 
@@ -123,29 +163,26 @@ export default function Dashboard() {
   const consonants = signs.filter((s) => s.category === "consonant");
 
   const getStats = (list: any[]) => {
-    // 1. Define the logical order of difficulties
     const difficultyMap: Record<string, number> = {
       easy: 1,
       medium: 2,
       hard: 3,
     };
 
-    // 2. Sort the list: first by Difficulty Level, then by ID
     const orderedList = [...list].sort((a, b) => {
       const diffA = difficultyMap[a.difficulty?.toLowerCase()] || 1;
       const diffB = difficultyMap[b.difficulty?.toLowerCase()] || 1;
 
       if (diffA !== diffB) {
-        return diffA - diffB; // Easy comes before Medium, etc.
+        return diffA - diffB;
       }
-      return a.id - b.id; // If difficulty is the same, sort by ID
+      return a.id - b.id;
     });
 
     const total = orderedList.length || 1;
     const completed = orderedList.filter((s) => s.is_completed).length;
     const percent = Math.round((completed / total) * 100);
 
-    // 3. Find the first sign that is unlocked but NOT completed in the correct order
     const current =
       orderedList.find((s) => !s.is_completed && !s.is_locked) ||
       orderedList[orderedList.length - 1];
@@ -156,9 +193,27 @@ export default function Dashboard() {
   const vStats = getStats(vowels);
   const cStats = getStats(consonants);
 
+  const findUserIndex = (list: any[]) => {
+    return list.findIndex(
+      (entry) =>
+        entry.email === user?.email ||
+        (entry.first_name === user?.first_name &&
+          entry.last_name === user?.last_name),
+    );
+  };
+
+  const myIndex = findUserIndex(leaderboard);
+  const myRankNum = myIndex !== -1 ? myIndex + 1 : 999;
+
+  const rank1 = leaderboard[0];
+  const rank2 = leaderboard[1];
+
+  const isRankMe = (index: number) => index === myIndex;
+
+  const nextBadge = badges.find((b) => !b.is_earned);
+
   return (
     <div className="min-h-screen w-full bg-[#F4EDE4] text-[#2C3E33]">
-      {/* 1. GAMIFIED NAVIGATION */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-border/50 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <h1 className="font-display text-3xl font-black text-primary tracking-tighter">
@@ -201,28 +256,67 @@ export default function Dashboard() {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-primary p-8 rounded-[3rem] text-white shadow-[0_12px_0_0_#4a5f4b] relative overflow-hidden">
               <div className="relative z-10 space-y-4">
-                <h1 className="text-5xl font-black uppercase tracking-tighter">
+                <h1 className="text-5xl font-black uppercase tracking-tighter text-shadow-sm">
                   Welcome,{" "}
                   <span className="text-yellow-300">{displayName}</span>!
                 </h1>
-                <p className="font-bold text-primary-foreground/80 max-w-xl text-lg">
-                  You're on a {userStats.streak} day streak! Level up to unlock
-                  the "Master" avatar.
+                <p className="font-bold text-primary-foreground/80 max-w-xl text-lg leading-relaxed">
+                  You're on a {userStats.streak} day streak! Level up and claim
+                  coins to unlock the "Legendary" avatars.
                 </p>
               </div>
+
               <Star className="absolute -right-10 -bottom-10 w-64 h-64 text-white/10 rotate-12" />
-              <div className="mt-6 flex items-center gap-4 bg-black/20 p-4 rounded-3xl border border-white/10 backdrop-blur-sm">
-                <div className="w-12 h-12 bg-yellow-400 rounded-2xl flex items-center justify-center text-2xl shadow-lg rotate-3">
-                  👑
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-yellow-200">
-                    Next Unlock at Level {userStats.level + 1}
-                  </p>
-                  <p className="font-bold text-sm">
-                    "Master Signer" Title & Golden Avatar Frame
-                  </p>
-                </div>
+
+              <div className="mt-6 flex items-center gap-4 bg-black/20 p-4 rounded-3xl border border-white/10 backdrop-blur-sm relative z-10">
+                {nextBadge ? (
+                  <>
+                    <div className="relative group/badge">
+                      <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border-b-4 border-white/20 shadow-lg overflow-hidden backdrop-blur-md">
+                        <img
+                          src={
+                            nextBadge.icon_url.startsWith("http")
+                              ? nextBadge.icon_url
+                              : `http://localhost:8000${nextBadge.icon_url}`
+                          }
+                          alt="Next Badge"
+                          className="w-10 h-10 object-contain grayscale brightness-125 opacity-80"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://ui-avatars.com/api/?name=?";
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex-1">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-300 leading-none mb-1">
+                        Earn Your Next Badge
+                      </p>
+                      <h4 className="font-black uppercase text-sm tracking-tight">
+                        {nextBadge.description}
+                      </h4>
+                      <p className="text-[11px] font-bold text-white/60 line-clamp-1">
+                        {nextBadge.name}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  /* Fallback if all badges are earned */
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-yellow-400 rounded-2xl flex items-center justify-center text-2xl shadow-lg rotate-3">
+                      🏆
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-yellow-200">
+                        Achievement Maxed!
+                      </p>
+                      <p className="font-bold text-sm">
+                        You have collected all legendary badges!
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -279,7 +373,7 @@ export default function Dashboard() {
               {/* THE 3D VIEWER */}
               <Avatar3DViewer
                 avatarFolder={dashboard?.equipped_avatar_folder || "avatar"}
-                animationName="BreathingIdle"
+                animationName="Idle"
               />
 
               {/* Subtle dark gradient for depth */}
@@ -355,32 +449,74 @@ export default function Dashboard() {
             </div>
 
             {/* Daily Challenge */}
-            <div className="bg-gradient-to-br from-secondary to-accent p-8 rounded-[3rem] text-white shadow-[0_12px_0_0_#829480] space-y-6">
+            <div className="bg-gradient-to-br from-secondary to-accent p-8 rounded-[3rem] text-white shadow-[0_12px_0_0_#829480] space-y-6 relative">
               <div className="flex justify-between items-center">
-                <h2 className="text-3xl font-black uppercase tracking-tighter">
-                  Daily Challenge
-                </h2>
-                <Target size={40} className="animate-pulse" />
+                <div className="space-y-1">
+                  <h2 className="text-3xl font-black uppercase tracking-tighter">
+                    Daily Challenge
+                  </h2>
+                  <p className="font-bold opacity-90 text-sm">
+                    {dashboard?.challenge_description}
+                  </p>
+                </div>
+                <Target
+                  size={44}
+                  className={cn(
+                    "transition-transform duration-700",
+                    dashboard?.can_claim_challenge
+                      ? "animate-bounce text-yellow-300"
+                      : "opacity-50",
+                  )}
+                />
               </div>
-              <p className="font-bold opacity-90">
-                Finish 5 lessons today for a massive +500 XP bonus!
-              </p>
-              <div className="flex gap-3">
-                {[1, 2, 3, 4, 5].map((i) => (
+
+              {/* DYNAMIC PROGRESS BARS */}
+              <div className="flex gap-2">
+                {[...Array(dashboard?.challenge_target)].map((_, i) => (
                   <div
                     key={i}
                     className={cn(
-                      "h-4 flex-1 rounded-full border-2 border-white/20",
-                      i <= userStats.completed % 5
-                        ? "bg-yellow-300 shadow-[0_0_15px_rgba(253,224,71,0.5)]"
-                        : "bg-white/10",
+                      "h-4 flex-1 rounded-full border-2 transition-all duration-700",
+                      i < (dashboard?.challenge_progress || 0)
+                        ? "bg-[#b5e61d] border-[#235c24] shadow-[0_0_15px_rgba(253,224,71,0.5)]"
+                        : "bg-white/10 border-white/20",
                     )}
                   />
                 ))}
               </div>
-              <GameButton variant="retro" className="w-full">
-                Start Challenge
-              </GameButton>
+
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/70">
+                Progress: {dashboard?.challenge_progress} /{" "}
+                {dashboard?.challenge_target} Completed
+              </p>
+
+              {/* ACTION BUTTON WITH POPUP ERROR */}
+              <div className="relative pt-2">
+                {showChallengeError && (
+                  <div className="absolute -top-14 left-1/2 -translate-x-1/2 w-full animate-pop-spin z-20 pointer-events-none">
+                    <div className="bg-red-500 text-white px-4 py-2 rounded-xl border-b-4 border-red-800 shadow-xl text-center">
+                      <span className="text-[10px] font-black uppercase tracking-widest">
+                        Finish the quest first! ⚔️
+                      </span>
+                    </div>
+                    <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-red-500 mx-auto" />
+                  </div>
+                )}
+
+                <GameButton
+                  variant={dashboard?.can_claim_challenge ? "jelly" : "retro"}
+                  className={cn(
+                    "w-full py-2 text-xl",
+                    !dashboard?.can_claim_challenge && "opacity-80",
+                  )}
+                  onClick={handleClaimChallenge}
+                  isLoading={isClaimingChallenge}
+                >
+                  {dashboard?.can_claim_challenge
+                    ? "CLAIM CHALLENGE REWARD 🎁"
+                    : "CLAIM CHALLENGE REWARD"}
+                </GameButton>
+              </div>
             </div>
           </div>
 
@@ -395,54 +531,89 @@ export default function Dashboard() {
                     Trophy Room
                   </h3>
                   <span className="text-xs font-black text-warning group-hover:underline">
-                    View Badges
+                    View All
                   </span>
                 </div>
 
-                {/* Mini Grid of Badges */}
-                <div className="grid grid-cols-3 gap-3">
-                  {achievements.slice(0, 6).map((achievement, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        "relative aspect-square rounded-2xl flex items-center justify-center text-2xl border-2 transition-all group-hover:scale-105",
-                        achievement.isUnlocked
-                          ? "bg-yellow-50 border-yellow-200 shadow-[inset_0_-4px_0_0_#fde047]"
-                          : "bg-slate-50 border-slate-100 opacity-30 grayscale",
-                      )}
-                    >
-                      {achievement.icon}
-                      {!achievement.isUnlocked && (
-                        <div className="absolute inset-0 flex items-center justify-center text-xs">
-                          🔒
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                {/* Sorted Grid: Showing first 6 slots */}
+                <div className="grid grid-cols-3 gap-5">
+                  {(badges.length > 0
+                    ? badges.slice(0, 6)
+                    : Array(6).fill(null)
+                  ).map((badge, i) => {
+                    if (!badge)
+                      return (
+                        <div
+                          key={i}
+                          className="aspect-square rounded-2xl bg-slate-50 border-2 border-slate-100"
+                        />
+                      );
+
+                    const isEarned = badge.is_earned;
+                    const iconUrl = badge.icon_url.startsWith("http")
+                      ? badge.icon_url
+                      : `http://localhost:8000${badge.icon_url}`;
+
+                    return (
+                      <div
+                        key={badge.id}
+                        className={cn(
+                          "relative aspect-square rounded-2xl flex items-center justify-center p-2 border-2 transition-all group-hover:scale-110 overflow-hidden",
+                          isEarned
+                            ? "bg-yellow-50 border-yellow-200 shadow-[inset_0_-4px_0_0_#fde047]"
+                            : "bg-slate-50 border-slate-100 opacity-30 grayscale",
+                        )}
+                      >
+                        <img
+                          src={iconUrl}
+                          alt={badge.name}
+                          className="w-8/12 h-8/12 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://ui-avatars.com/api/?name=" + badge.name;
+                          }}
+                        />
+                        {/* Lock overlay for unearned badges */}
+                        {!isEarned && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Lock size={10} className="text-slate-400" />
+                          </div>
+                        )}
+                        {/* Sparkle for earned badges */}
+                        {isEarned && (
+                          <div className="absolute top-0.5 right-0.5">
+                            <Sparkles
+                              size={10}
+                              className="text-yellow-500 animate-pulse"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {/* Progress Summary */}
-                <div className="bg-slate-50 rounded-2xl p-3 border-2 border-slate-100">
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
-                    <span>Collection Progress</span>
+                {/* Progress Tracking Section */}
+                <div className="bg-slate-50 rounded-2xl p-4 border-2 border-slate-100">
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
+                    <span>Badge Progress</span>
                     <span>
-                      {achievements.filter((a) => a.isUnlocked).length} /{" "}
-                      {achievements.length}
+                      {badges.filter((b) => b.is_earned).length} /{" "}
+                      {badges.length || 0}
                     </span>
                   </div>
-                  <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden shadow-inner">
                     <div
-                      className="h-full bg-warning transition-all duration-1000"
+                      className="h-full bg-warning transition-all duration-1000 shadow-[0_0_10px_#fde047]"
                       style={{
-                        width: `${(achievements.filter((a) => a.isUnlocked).length / achievements.length) * 100}%`,
+                        width: `${badges.length ? (badges.filter((b) => b.is_earned).length / badges.length) * 100 : 0}%`,
                       }}
                     />
                   </div>
                 </div>
 
-                {/* The Visual CTA Button */}
                 <div className="pt-1">
-                  <div className="w-full bg-warning text-yellow-900 py-3 rounded-2xl font-black uppercase text-center border-b-4 border-yellow-600 group-hover:bg-yellow-400 transition-colors">
+                  <div className="w-full bg-warning text-white py-4 rounded-2xl font-black uppercase text-center border-b-4 border-yellow-600 group-hover:bg-yellow-400 transition-colors">
                     All Achievements
                   </div>
                 </div>
@@ -454,58 +625,63 @@ export default function Dashboard() {
               <div className="bg-white rounded-[3rem] p-8 border-b-8 border-slate-200 shadow-xl space-y-6 transition-all hover:border-accent hover:-translate-y-1 active:translate-y-0 active:border-b-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                    <Crown className="text-accent fill-accent group-hover:animate-bounce" />
-                    Top Rangers
+                    <Crown className="text-accent fill-accent group-hover:animate-bounce" />{" "}
+                    Rankings
                   </h3>
                   <span className="text-xs font-black text-primary group-hover:underline">
-                    View All
+                    Hall of Fame
                   </span>
                 </div>
 
                 <div className="space-y-3">
-                  {[
-                    { rank: 1, name: "SignPro", level: 25, icon: "🥇" },
-                    { rank: 2, name: "FastLearner", level: 22, icon: "🥈" },
-                    {
-                      rank: 3,
-                      name: displayName,
-                      level: userStats.level,
-                      icon: "🥉",
-                      isYou: true,
-                    },
-                  ].map((player) => (
-                    <div
-                      key={player.rank}
-                      className={cn(
-                        "flex items-center justify-between p-4 rounded-2xl border-2 transition-all",
-                        player.isYou
-                          ? "bg-primary/10 border-primary"
-                          : "bg-slate-50 border-transparent group-hover:bg-slate-100",
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="font-black text-sm w-6">
-                          {player.rank}
-                        </span>
-                        <span
-                          className={cn(
-                            "font-bold",
-                            player.isYou && "text-primary",
-                          )}
-                        >
-                          {player.name} {player.isYou && "⭐"}
+                  {/* RANK 1 SLOT */}
+                  {rank1 && (
+                    <RankItem
+                      rank={1}
+                      name={isRankMe(0) ? "You" : rank1.first_name}
+                      level={rank1.level}
+                      isMe={isRankMe(0)}
+                      isSpecial
+                    />
+                  )}
+
+                  {/* RANK 2 SLOT */}
+                  {rank2 && (
+                    <RankItem
+                      rank={2}
+                      name={isRankMe(1) ? "You" : rank2.first_name}
+                      level={rank2.level}
+                      isMe={isRankMe(1)}
+                    />
+                  )}
+
+                  {/* SHOW "YOU" ONLY IF YOU ARE RANK 3 OR LOWER */}
+                  {myRankNum > 2 && (
+                    <>
+                      <div className="flex justify-center gap-1 opacity-20 py-1">
+                        <div className="w-1 h-1 bg-black rounded-full" />
+                        <div className="w-1 h-1 bg-black rounded-full" />
+                        <div className="w-1 h-1 bg-black rounded-full" />
+                      </div>
+                      <div className="flex items-center justify-between p-4 rounded-2xl border-2 border-primary bg-primary/10 shadow-md">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white border-b-4 border-[#4a5f4b] font-black text-xs">
+                            {myRankNum}
+                          </div>
+                          <span className="font-black text-sm text-primary uppercase tracking-tight">
+                            You
+                          </span>
+                        </div>
+                        <span className="font-black text-xs text-primary uppercase">
+                          LVL {dashboard?.level}
                         </span>
                       </div>
-                      <span className="font-black text-xs text-primary">
-                        LVL {player.level}
-                      </span>
-                    </div>
-                  ))}
+                    </>
+                  )}
                 </div>
 
-                {/* The Visual Button - It's inside the link so it's decorative but functional */}
                 <div className="pt-1">
-                  <div className="w-full bg-warning text-yellow-900 py-3 rounded-2xl font-black uppercase text-center border-b-4 border-yellow-600 group-hover:bg-yellow-400 transition-colors">
+                  <div className="w-full bg-warning text-white py-4 rounded-2xl font-black uppercase text-center border-b-4 border-yellow-600 group-hover:bg-yellow-400 transition-colors">
                     Full Leaderboard
                   </div>
                 </div>
@@ -514,6 +690,41 @@ export default function Dashboard() {
           </div>
         </section>
       </main>
+    </div>
+  );
+}
+
+function RankItem({ rank, name, level, isSpecial = false }: any) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between p-4 rounded-2xl border-2",
+        isSpecial
+          ? "border-yellow-200 bg-yellow-50/50"
+          : "border-slate-50 bg-slate-50/30",
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center border-b-4 text-xs font-black",
+            isSpecial
+              ? "bg-yellow-400 border-yellow-600 text-white"
+              : "bg-slate-200 border-slate-300 text-slate-500",
+          )}
+        >
+          {isSpecial ? <Crown size={18} /> : rank}
+        </div>
+        <span className="font-bold text-sm truncate max-w-[100px]">{name}</span>
+      </div>
+      <span
+        className={cn(
+          "font-black text-[10px] uppercase",
+          isSpecial ? "text-yellow-600" : "text-slate-400",
+        )}
+      >
+        LVL {level}
+      </span>
     </div>
   );
 }

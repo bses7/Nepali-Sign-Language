@@ -8,6 +8,15 @@ export interface AvatarItem {
   folder_name: string;
   price: number;
   is_owned: boolean;
+  attributes: {
+    type: string;
+    face_shape: string;
+    skin_color: string;
+    hair_color: string;
+    eye_color: string;
+    clothing_color: string;
+    accessories: string[];
+  };
 }
 
 export const avatarService = {

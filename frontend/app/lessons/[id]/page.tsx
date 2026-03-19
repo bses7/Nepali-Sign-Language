@@ -30,16 +30,13 @@ export default function LessonDetailPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      // 1. Fetch the specific sign details (for the 3D model/title)
       const detailRes = await lessonsService.getSignById(id as string);
 
-      // 2. Fetch all signs to check the USER'S PROGRESS (is_completed)
       const listRes = await lessonsService.getSigns();
 
       if (detailRes.success) {
         setSign(detailRes.data);
 
-        // 3. Find this specific sign in the progress list to check status
         if (listRes.success) {
           const signProgress = listRes.data?.find(
             (s: any) => s.id === Number(id),
@@ -87,7 +84,7 @@ export default function LessonDetailPage() {
           <div className="flex items-center gap-4">
             <GameButton
               variant="back"
-              onClick={() => router.push(`/lessons?category=${sign.category}`)} 
+              onClick={() => router.push(`/lessons?category=${sign.category}`)}
             >
               <ArrowLeft size={24} strokeWidth={3} />
             </GameButton>
@@ -168,13 +165,9 @@ export default function LessonDetailPage() {
                 <RewardIcon
                   icon={<ShieldCheck />}
                   label="MASTERED"
-                  color="bg-blue-500"
-                />
-                <RewardIcon
-                  icon={<Trophy />}
-                  label="BADGE"
                   color="bg-primary"
                 />
+                <RewardIcon icon={<Trophy />} label="BADGE" color="bg-accent" />
               </div>
             </div>
 

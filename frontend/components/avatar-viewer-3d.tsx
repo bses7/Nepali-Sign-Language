@@ -13,7 +13,7 @@ import {
   useProgress, // Added to track loading progress
 } from "@react-three/drei";
 import { avatarService } from "@/lib/api/avatar";
-import { Loader2, Zap } from "lucide-react"; 
+import { Loader2, Zap } from "lucide-react";
 
 interface Avatar3DViewerProps {
   avatarFolder?: string;
@@ -73,6 +73,9 @@ function LoadedAvatar({ folder, animation = "Idle", position }: any) {
   const { scene, animations } = useGLTF(modelPath) as unknown as GLTFResult;
   const { actions } = useAnimations(animations, group);
 
+  const isDragging = useRef(false);
+  const previousX = useRef(0);
+
   useEffect(() => {
     const firstAction = Object.values(actions)[0] as THREE.AnimationAction;
     if (firstAction) {
@@ -82,6 +85,37 @@ function LoadedAvatar({ folder, animation = "Idle", position }: any) {
       if (firstAction) firstAction.fadeOut(0.5);
     };
   }, [actions, animation, folder]);
+
+  // 👉 Mouse events
+  useEffect(() => {
+    const handleDown = (e: MouseEvent) => {
+      isDragging.current = true;
+      previousX.current = e.clientX;
+    };
+
+    const handleUp = () => {
+      isDragging.current = false;
+    };
+
+    const handleMove = (e: MouseEvent) => {
+      if (!isDragging.current || !group.current) return;
+
+      const delta = e.clientX - previousX.current;
+      previousX.current = e.clientX;
+
+      group.current.rotation.y += delta * 0.01; // adjust sensitivity
+    };
+
+    window.addEventListener("mousedown", handleDown);
+    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("mousemove", handleMove);
+
+    return () => {
+      window.removeEventListener("mousedown", handleDown);
+      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("mousemove", handleMove);
+    };
+  }, []);
 
   return (
     <primitive
@@ -117,7 +151,7 @@ export const Avatar3DViewer: React.FC<Avatar3DViewerProps> = ({
   avatarFolder = "avatar",
   className = "",
   animationName = "Idle",
-  cameraPosition = [1, 0.5, 5],
+  cameraPosition = [1, 0.5, 5.5],
   cameraFov = 45,
   stagePosition = [0, -3.2, -1],
   shadowPosition = [0, -3.2, -1],
@@ -170,7 +204,11 @@ export const Avatar3DViewer: React.FC<Avatar3DViewerProps> = ({
           <LoadedAvatar
             folder={avatarFolder}
             animation={animationName}
-            position={stagePosition}
+            position={[
+              stagePosition[0],
+              stagePosition[1] + 0.1,
+              stagePosition[2],
+            ]}
           />
 
           <ContactShadows
@@ -185,7 +223,8 @@ export const Avatar3DViewer: React.FC<Avatar3DViewerProps> = ({
           <OrbitControls
             enableZoom={false}
             enablePan={false}
-            target={[0, stagePosition[1] + 2.7, 0]}
+            enableRotate={false}
+            target={[0, stagePosition[1] + 2.5, 0]}
             minPolarAngle={Math.PI / 3}
             maxPolarAngle={Math.PI / 1.8}
           />

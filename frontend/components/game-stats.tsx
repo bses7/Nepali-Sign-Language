@@ -26,7 +26,7 @@ export const XPBar: React.FC<XPBarProps> = ({ current, max, level }) => {
       </div>
       <div className="relative w-full h-10 bg-slate-100 border-b-4 border-slate-200 rounded-2xl overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 shadow-[inset_0_4px_0_rgba(255,255,255,0.3)]"
+          className="h-full bg-gradient-to-r from-primary to-[#8dc63f] transition-all duration-1000 shadow-[inset_0_4px_0_rgba(255,255,255,0.3)]"
           style={{ width: `${percentage}%` }}
         />
         {/* Animated Gloss Effect */}

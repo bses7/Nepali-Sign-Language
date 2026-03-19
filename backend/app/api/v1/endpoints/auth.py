@@ -120,8 +120,21 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         db.add(user)
         db.flush()
         
-        default_avatar = db.query(AvatarModel).filter(AvatarModel.folder_name == "avatar").first()
-        new_stats = UserStats(user_id=user.id, current_avatar_id=default_avatar.id if default_avatar else None)
+        free_avatars = db.query(AvatarModel).filter(AvatarModel.price == 0).all()
+        for avatar in free_avatars:
+            user.owned_avatars.append(avatar)
+        
+        default_avatar = next((a for a in free_avatars if a.folder_name == "avatar"), None)
+        new_stats = UserStats(
+            user_id=user.id, 
+            xp=0, 
+            level=1, 
+            coins=0,
+            current_avatar_id=default_avatar.id if default_avatar else None
+        )
+
+        gamification_service.check_and_award_badges(db, user)
+        
         db.add(new_stats)
         db.commit()
         db.refresh(user)
@@ -169,13 +182,21 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
         db.add(user)
         db.flush()
         
-        default_avatar = db.query(AvatarModel).filter(AvatarModel.folder_name == "avatar").first()
+        free_avatars = db.query(AvatarModel).filter(AvatarModel.price == 0).all()
+        for avatar in free_avatars:
+            user.owned_avatars.append(avatar)
+        
+        default_avatar = next((a for a in free_avatars if a.folder_name == "avatar"), None)
         new_stats = UserStats(
             user_id=user.id, 
             current_avatar_id=default_avatar.id if default_avatar else None,
             xp=0, 
+            level=1,
             coins=0
         )
+
+        gamification_service.check_and_award_badges(db, user)
+
         db.add(new_stats)
         db.commit()
         db.refresh(user)

@@ -23,6 +23,11 @@ class UserStats(Base):
     last_claim_date = Column(Date, nullable=True)
 
     weekly_activity = Column(JSON, default=list)
+
+    daily_challenge_progress = Column(Integer, default=0)
+    last_challenge_claim_date = Column(Date, nullable=True)
+    
+    current_challenge_id = Column(Integer, default=0)
     
     user = relationship("User", back_populates="stats")
 

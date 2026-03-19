@@ -12,3 +12,14 @@ class Badge(BadgeBase):
     earned_at: datetime | None = None 
 
     model_config = ConfigDict(from_attributes=True)
+
+class BadgeStatusOut(BaseModel):
+    id: int
+    name: str
+    description: str
+    icon_url: str
+    badge_code: str
+    is_earned: bool 
+    earned_at: datetime | None = None 
+
+    model_config = ConfigDict(from_attributes=True)

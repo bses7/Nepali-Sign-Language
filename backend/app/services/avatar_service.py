@@ -16,7 +16,8 @@ def get_store_avatars(db: Session, user_id: int):
             "name": a.name,
             "folder_name": a.folder_name,
             "price": a.price,
-            "is_owned": (a.id in owned_ids) or (a.price == 0)
+            "is_owned": (a.id in owned_ids) or (a.price == 0),
+            "attributes": a.attributes or {}
         })
     return avatars_list
 

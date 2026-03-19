@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
-from app.services import avatar_service
+from app.services import avatar_service, gamification_service
 from app.schemas.lesson import Avatar as AvatarSchema
 
 router = APIRouter()
@@ -19,6 +19,9 @@ def buy_avatar(avatar_id: int, db: Session = Depends(get_db), current_user: User
     message, success = avatar_service.purchase_avatar(db, current_user, avatar_id)
     if not success:
         raise HTTPException(status_code=400, detail=message)
+    
+    gamification_service.check_and_award_badges(db, current_user)
+    
     return {"message": message}
 
 @router.post("/equip/{avatar_id}")

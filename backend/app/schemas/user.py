@@ -68,6 +68,12 @@ class DashboardOut(BaseModel):
     can_claim_daily: bool
 
     weekly_activity: list[int]
+
+    challenge_title: str
+    challenge_description: str
+    challenge_progress: int
+    challenge_target: int
+    can_claim_challenge: bool
     
     model_config = ConfigDict(from_attributes=True)
 

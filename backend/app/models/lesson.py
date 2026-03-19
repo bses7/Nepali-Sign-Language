@@ -1,7 +1,8 @@
 import enum
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy import JSON, Column, Integer, String, Enum, ForeignKey, Boolean, UniqueConstraint, DateTime
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from sqlalchemy.sql import func
 from sqlalchemy import Table
 
 class DifficultyLevel(str, enum.Enum):
@@ -31,8 +32,8 @@ class Sign(Base):
 user_avatars = Table(
     "user_avatars",
     Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE")),
-    Column("avatar_id", Integer, ForeignKey("avatars.id", ondelete="CASCADE")),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("avatar_id", Integer, ForeignKey("avatars.id", ondelete="CASCADE"), primary_key=True),
 )
 
 class Avatar(Base):
@@ -40,7 +41,9 @@ class Avatar(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True)
     folder_name = Column(String)   
-    price = Column(Integer, default=0) # 0 means it's free/default  
+    price = Column(Integer, default=0) 
+
+    attributes = Column(JSON, nullable=True)
 
 class UserProgress(Base):
     __tablename__ = "user_progress"
@@ -49,6 +52,8 @@ class UserProgress(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     sign_id = Column(Integer, ForeignKey("signs.id", ondelete="CASCADE"))
     is_completed = Column(Boolean, default=False)
+
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
     __table_args__ = (UniqueConstraint('user_id', 'sign_id', name='_user_sign_uc'),)
 

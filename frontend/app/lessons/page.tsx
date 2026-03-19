@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react"; 
+import { useState, useEffect, Suspense } from "react";
 import { useAuthStore } from "@/lib/store/auth";
 import { lessonsService } from "@/lib/api/lessons";
 import { GameButton } from "@/components/game-button";
@@ -21,9 +21,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 // 1. Move all logic into a sub-component
 function LessonsContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const urlCategory = searchParams.get("category") as
     | "vowel"
@@ -40,7 +42,6 @@ function LessonsContent() {
   const { isAuthenticated, dashboard, fetchDashboard } = useAuthStore();
   const [selectedSign, setSelectedSign] = useState<any>(null);
 
-  // Sync state if URL changes while on the page
   useEffect(() => {
     if (urlCategory) {
       setSelectedCategory(urlCategory);
@@ -48,15 +49,22 @@ function LessonsContent() {
   }, [urlCategory]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchDashboard();
-      lessonsService
-        .getSigns()
-        .then((res) => res.success && setSigns(res.data || []));
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
     }
-  }, [isAuthenticated, fetchDashboard]);
+
+    fetchDashboard();
+    lessonsService
+      .getSigns()
+      .then((res) => res.success && setSigns(res.data || []));
+  }, [isAuthenticated, router, fetchDashboard]);
 
   const filteredSigns = signs.filter((s) => s.category === selectedCategory);
+
+  if (!isAuthenticated) {
+    return <LoadingScreen />;
+  }
 
   if (!selectedCategory) {
     return (
@@ -244,5 +252,16 @@ export default function LessonsPage() {
     >
       <LessonsContent />
     </Suspense>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background gap-4">
+      <div className="w-16 h-16 border-8 border-primary/20 border-t-primary rounded-full animate-spin" />
+      <p className="font-black uppercase tracking-widest text-primary animate-pulse">
+        Syncing Player Data...
+      </p>
+    </div>
   );
 }

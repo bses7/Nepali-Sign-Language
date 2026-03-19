@@ -17,6 +17,8 @@ export const API_CONFIG = {
       claim: "/api/v1/users/claim-daily",
       leaderboard: "/api/v1/users/leaderboard",
       badges: "/api/v1/users/badges",
+      badgesall: "/api/v1/users/badges/all",
+      claim_challenge: "/api/v1/users/claim-challenge",
     },
     lessons: {
       signs: "/api/v1/lessons/signs",

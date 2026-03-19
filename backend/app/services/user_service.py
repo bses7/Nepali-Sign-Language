@@ -28,6 +28,17 @@ def get_dashboard_data(db: Session, user: User):
 
     update_activity_log(db, user.stats)
 
+    challenge = get_challenge_for_today()
+
+    if stats.last_activity_date != date.today():
+        progress = 0
+    else:
+        progress = stats.daily_challenge_progress or 0
+
+    not_claimed_yet = stats.last_challenge_claim_date != date.today()
+    
+    can_claim_challenge = (progress >= challenge["count"]) and not_claimed_yet
+
     return {
         "first_name": user.first_name,
         "last_name": user.last_name,
@@ -43,6 +54,11 @@ def get_dashboard_data(db: Session, user: User):
         "equipped_avatar_folder": stats.current_avatar.folder_name if stats and stats.current_avatar else "avatar",
         "can_claim_daily": can_claim,
         "weekly_activity": user.stats.weekly_activity,
+        "challenge_title": challenge["title"],
+        "challenge_description": challenge["description"],
+        "challenge_progress": progress,
+        "challenge_target": challenge["count"],
+        "can_claim_challenge": can_claim_challenge
     }
 
 def update_streak(db: Session, stats: UserStats):
@@ -96,7 +112,6 @@ def get_leaderboard(db: Session, limit: int = 10):
 def claim_daily_reward(db: Session, user: User):
     today = date.today()
     
-    # 1. Create stats if they don't exist
     if not user.stats:
         new_stats = UserStats(
             user_id=user.id, 
@@ -148,3 +163,57 @@ def update_activity_log(db: Session, stats: UserStats):
     stats.last_activity_date = today
     db.add(stats)
     db.commit()
+
+CHALLENGE_POOL = [
+    {"id": 0, "title": "The Academic", "description": "Complete 5 Vowels", "target_cat": "vowel", "target_diff": None, "count": 5},
+    {"name": 1, "title": "The Grinder", "description": "Complete 5 Lessons of any kind", "target_cat": None, "target_diff": None, "count": 5},
+    {"id": 2, "title": "The Brave", "description": "Complete 3 Hard Difficulty Lessons", "target_cat": None, "target_diff": "hard", "count": 3},
+    {"id": 3, "title": "Consonant King", "description": "Complete 5 Consonants", "target_cat": "consonant", "target_diff": None, "count": 5},
+    {"id": 4, "title": "Quick Learner", "description": "Complete 3 Medium Difficulty Lessons", "target_cat": None, "target_diff": "medium", "count": 3}
+]
+
+def get_challenge_for_today():
+    day_of_year = date.today().timetuple().tm_yday
+    return CHALLENGE_POOL[day_of_year % len(CHALLENGE_POOL)]
+
+def update_daily_challenge(db: Session, stats: UserStats, completed_sign):
+    today = date.today()
+    challenge = get_challenge_for_today()
+
+    if stats.last_activity_date != today:
+        stats.daily_challenge_progress = 0
+        stats.current_challenge_id = challenge["id"]
+
+    # Ensure progress is at least 0 before incrementing
+    if stats.daily_challenge_progress is None:
+        stats.daily_challenge_progress = 0
+
+    matches_cat = challenge["target_cat"] is None or completed_sign.category == challenge["target_cat"]
+    matches_diff = challenge["target_diff"] is None or completed_sign.difficulty == challenge["target_diff"]
+
+    if matches_cat and matches_diff:
+        if stats.daily_challenge_progress < challenge["count"]:
+            stats.daily_challenge_progress += 1
+    
+    db.commit()
+
+def claim_daily_challenge(db: Session, user: User):
+    today = date.today()
+    stats = user.stats
+    challenge = get_challenge_for_today()
+
+    current_progress = stats.daily_challenge_progress or 0
+
+    if current_progress < challenge["count"]:
+        return False, f"Challenge not yet complete! Need {challenge['count']} steps."
+
+    if stats.last_challenge_claim_date == today:
+        return False, "Daily challenge reward already claimed today."
+
+    # Award
+    stats.xp = (stats.xp or 0) + 500
+    stats.coins = (stats.coins or 0) + 200
+    stats.last_challenge_claim_date = today
+    
+    db.commit()
+    return True, "Challenge complete! 500 XP and 200 Coins awarded."
