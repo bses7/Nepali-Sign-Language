@@ -223,7 +223,6 @@ interface WeeklyActivityProps {
 export const WeeklyActivity: React.FC<WeeklyActivityProps> = ({
   activityDays = [],
 }) => {
-  // Mapping labels to standard Python weekday indices (0=Mon, 6=Sun)
   const days = [
     { label: "M", id: 0 },
     { label: "T", id: 1 },
@@ -237,7 +236,7 @@ export const WeeklyActivity: React.FC<WeeklyActivityProps> = ({
   return (
     <div className="bg-white p-6 rounded-[2.5rem] border-b-8 border-slate-200 shadow-xl flex flex-col justify-between">
       <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-muted-foreground mb-4 text-center">
-        Weekly Training
+        Weekly Activity
       </h4>
       <div className="flex justify-between items-center px-1">
         {days.map((day) => {

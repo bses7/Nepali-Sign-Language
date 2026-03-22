@@ -16,11 +16,9 @@ function CallbackContent() {
     const error = searchParams.get("error");
 
     if (token) {
-      // Save token and sync Zustand
       tokenManager.setToken(token);
       setSocialLogin(token);
 
-      // Short delay so the user can see the "beautiful" loading state
       const timer = setTimeout(() => {
         router.push("/dashboard");
       }, 1000);
@@ -33,7 +31,6 @@ function CallbackContent() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-6 relative overflow-hidden">
-      {/* Background Decorative */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-secondary/10 rounded-full blur-[120px] animate-pulse" />
 

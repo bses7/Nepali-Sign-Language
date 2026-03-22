@@ -96,7 +96,6 @@ export const GameButton = React.forwardRef<HTMLButtonElement, GameButtonProps>(
             </div>
           </span>
         ) : variant === "jelly" ? (
-          /* NEW JELLY INNER BOX */
           <span
             className={cn(
               "w-full h-full flex items-center justify-center bg-[#76c92e] rounded-full relative overflow-hidden",
@@ -104,7 +103,6 @@ export const GameButton = React.forwardRef<HTMLButtonElement, GameButtonProps>(
               sizeClasses[size],
             )}
           >
-            {/* Glossy light "Blobs" from your image */}
             <div className="absolute top-1.5 left-4 w-6 h-3 bg-white/30 rounded-full blur-[1px] rotate-[-5deg]" />
             <div className="absolute top-3 left-10 w-2 h-2 bg-white/20 rounded-full blur-[0.5px]" />
 
@@ -113,7 +111,12 @@ export const GameButton = React.forwardRef<HTMLButtonElement, GameButtonProps>(
             </span>
           </span>
         ) : (
-          <span className={sizeClasses[size]}>
+          <span
+            className={cn(
+              sizeClasses[size],
+              "flex items-center justify-center gap-3",
+            )}
+          >
             {isLoading ? "..." : children}
           </span>
         )}

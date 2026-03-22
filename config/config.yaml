@@ -6,6 +6,7 @@ paths:
   cons_part1: "data/NSL_Consonant_Part_1"
   cons_part3: "data/NSL_Consonant_Part_3"
   annotations: "data/annotations"
+  vocab_path: "vocab.json"
 
 mediapipe:
   static_image_mode: false
@@ -72,6 +73,7 @@ processing:
     "KSHA": "क्ष"
     "TRA": "त्र"
     "GYA": "ज्ञ"
+
 training:
   batch_size: 32
   epochs: 1000

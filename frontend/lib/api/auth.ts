@@ -57,7 +57,7 @@ export const authService = {
 
     if (response.success && response.data?.access_token) {
       tokenManager.setToken(response.data.access_token);
-      console.log("[v0] Login successful, token saved");
+      console.log("Login successful, token saved");
     }
 
     return response;
@@ -79,7 +79,7 @@ export const authService = {
 
     if (response.success && response.data?.access_token) {
       tokenManager.setToken(response.data.access_token);
-      console.log("[v0] Signup successful, token saved");
+      console.log("Signup successful, token saved");
     }
 
     return response;
@@ -87,7 +87,7 @@ export const authService = {
 
   logout(): void {
     tokenManager.removeToken();
-    console.log("[v0] Logged out, token removed");
+    console.log("Logged out, token removed");
   },
 
   isAuthenticated(): boolean {

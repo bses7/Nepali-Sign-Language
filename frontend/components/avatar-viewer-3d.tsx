@@ -19,6 +19,7 @@ interface Avatar3DViewerProps {
   avatarFolder?: string;
   className?: string;
   animationName?: string;
+  isShopAnimation?: boolean;
   cameraPosition?: [number, number, number];
   cameraFov?: number;
   stagePosition?: [number, number, number];
@@ -67,9 +68,16 @@ type GLTFResult = THREE.Object3D & {
   animations: THREE.AnimationClip[];
 };
 
-function LoadedAvatar({ folder, animation = "Idle", position }: any) {
+function LoadedAvatar({
+  folder,
+  animation = "Idle",
+  position,
+  isShopAnimation,
+}: any) {
   const group = useRef<THREE.Group>(null);
-  const modelPath = avatarService.getAnimationUrl(folder, animation);
+  const modelPath = isShopAnimation
+    ? avatarService.getShopAnimationUrl(folder, animation)
+    : avatarService.getAnimationUrl(folder, animation);
   const { scene, animations } = useGLTF(modelPath) as unknown as GLTFResult;
   const { actions } = useAnimations(animations, group);
 
@@ -86,7 +94,6 @@ function LoadedAvatar({ folder, animation = "Idle", position }: any) {
     };
   }, [actions, animation, folder]);
 
-  // 👉 Mouse events
   useEffect(() => {
     const handleDown = (e: MouseEvent) => {
       isDragging.current = true;
@@ -151,6 +158,7 @@ export const Avatar3DViewer: React.FC<Avatar3DViewerProps> = ({
   avatarFolder = "avatar",
   className = "",
   animationName = "Idle",
+  isShopAnimation = false,
   cameraPosition = [1, 0.5, 5.5],
   cameraFov = 45,
   stagePosition = [0, -3.2, -1],
@@ -204,6 +212,7 @@ export const Avatar3DViewer: React.FC<Avatar3DViewerProps> = ({
           <LoadedAvatar
             folder={avatarFolder}
             animation={animationName}
+            isShopAnimation={isShopAnimation} 
             position={[
               stagePosition[0],
               stagePosition[1] + 0.1,

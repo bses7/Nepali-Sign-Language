@@ -108,8 +108,26 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Failed to fetch user info from Google")
 
     user = db.query(UserModel).filter(UserModel.email == user_info['email']).first()
+
+    if user:
+        if not user.google_id:
+            user.google_id = user_info['sub']
+            # Update names if they were missing (common for old manual accounts)
+            if not user.first_name: user.first_name = user_info.get('given_name')
+            if not user.last_name: user.last_name = user_info.get('family_name')
+            db.commit()
+        
+        if not user.stats:
+            free_avatars = db.query(AvatarModel).filter(AvatarModel.price == 0).all()
+            default_avatar = next((a for a in free_avatars if a.folder_name == "avatar"), None)
+            new_stats = UserStats(
+                user_id=user.id, xp=0, level=1, coins=0,
+                current_avatar_id=default_avatar.id if default_avatar else None
+            )
+            db.add(new_stats)
+            db.flush()
     
-    if not user:
+    else:
         user = UserModel(
             email=user_info['email'],
             first_name=user_info.get('given_name', ''),
@@ -141,7 +159,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
 
     access_token = create_access_token(subject=user.email)
 
-    frontend_url = "http://localhost:3000/auth/callback"
+    frontend_url = "http://localhost:3000/callback"
     return RedirectResponse(url=f"{frontend_url}?token={access_token}")
 
 @router.get("/login/github")
@@ -165,8 +183,23 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
         email = next(e['email'] for e in emails if e['primary'])
 
     user = db.query(UserModel).filter(UserModel.email == email).first()
+
+    if user:
+        if not user.github_id:
+            user.github_id = str(user_info['id'])
+            db.commit()
+        
+        if not user.stats:
+            free_avatars = db.query(AvatarModel).filter(AvatarModel.price == 0).all()
+            default_avatar = next((a for a in free_avatars if a.folder_name == "avatar"), None)
+            new_stats = UserStats(
+                user_id=user.id, xp=0, level=1, coins=0,
+                current_avatar_id=default_avatar.id if default_avatar else None
+            )
+            db.add(new_stats)
+            db.flush()
     
-    if not user:
+    else:
         full_name = user_info.get('name', 'GitHub User')
         name_parts = full_name.split(" ", 1)
         f_name = name_parts[0]
@@ -203,6 +236,6 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
 
     access_token = create_access_token(subject=user.email)
     
-    frontend_url = "http://localhost:3000/auth/callback"
+    frontend_url = "http://localhost:3000/callback"
     return RedirectResponse(url=f"{frontend_url}?token={access_token}")
 

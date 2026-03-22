@@ -3,7 +3,6 @@ import { persist } from "zustand/middleware";
 import { authService } from "@/lib/api/auth";
 import { usersService, DashboardData } from "@/lib/api/users";
 
-// 1. Updated User interface to include new backend fields
 export interface User {
   id?: string;
   email: string;
@@ -15,21 +14,19 @@ export interface User {
 }
 
 export interface AuthStore {
-  // Auth state
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
 
-  // Dashboard state
   dashboard: DashboardData | null;
   isDashboardLoading: boolean;
 
-  // Auth actions
+  isOffline: boolean;
+
   login: (email: string, password: string) => Promise<boolean>;
 
-  // 2. Updated signup signature to require all 6 fields
   signup: (
     email: string,
     password: string,
@@ -44,13 +41,13 @@ export interface AuthStore {
   logout: () => void;
   clearError: () => void;
 
-  // Dashboard actions
   fetchDashboard: () => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
+      isOffline: false,
       user: null,
       token: null,
       isAuthenticated: false,
@@ -75,17 +72,14 @@ export const useAuthStore = create<AuthStore>()(
             });
             return true;
           } else {
-            set({
-              error: response.error || "Login failed",
-              isLoading: false,
-            });
+            if (response.error?.toLowerCase().includes("network error")) {
+              set({ isOffline: true });
+            }
+            set({ error: response.error, isLoading: false });
             return false;
           }
         } catch (error) {
-          set({
-            error: "Login failed",
-            isLoading: false,
-          });
+          set({ isOffline: true, isLoading: false });
           return false;
         }
       },
@@ -133,17 +127,14 @@ export const useAuthStore = create<AuthStore>()(
             });
             return true;
           } else {
-            set({
-              error: response.error || "Signup failed",
-              isLoading: false,
-            });
+            if (response.error?.toLowerCase().includes("network error")) {
+              set({ isOffline: true });
+            }
+            set({ error: response.error, isLoading: false });
             return false;
           }
         } catch (error) {
-          set({
-            error: "Signup failed",
-            isLoading: false,
-          });
+          set({ isOffline: true, isLoading: false });
           return false;
         }
       },
@@ -186,24 +177,28 @@ export const useAuthStore = create<AuthStore>()(
                 email: response.data.user?.email || get().user?.email || "",
                 first_name: response.data.first_name,
                 last_name: response.data.last_name,
+                phone_number: response.data.phone_number || "",
                 role: response.data.user?.role || get().user?.role,
-                coins: response.data.coins, // Synchronizes coins across app
+                coins: response.data.coins, 
               },
               isDashboardLoading: false,
+              isOffline: false,
             });
             return true;
           } else {
-            set({
-              error: response.error || "Failed to fetch dashboard",
-              isDashboardLoading: false,
-            });
+            const errorStr = response.error?.toLowerCase() || "";
+            if (
+              errorStr.includes("network error") ||
+              errorStr.includes("connection")
+            ) {
+              set({ isOffline: true });
+            }
+
+            set({ isDashboardLoading: false });
             return false;
           }
         } catch (error) {
-          set({
-            error: "Failed to fetch dashboard",
-            isDashboardLoading: false,
-          });
+          set({ isOffline: true, isDashboardLoading: false });
           return false;
         }
       },

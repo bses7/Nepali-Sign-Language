@@ -14,9 +14,10 @@ import {
   Zap,
   ShieldCheck,
   Trophy,
+  Video,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils"; // Use the standard project cn utility
+import { cn } from "@/lib/utils";
 
 export default function LessonDetailPage() {
   const { id } = useParams();
@@ -31,12 +32,10 @@ export default function LessonDetailPage() {
   useEffect(() => {
     const loadData = async () => {
       const detailRes = await lessonsService.getSignById(id as string);
-
       const listRes = await lessonsService.getSigns();
 
       if (detailRes.success) {
         setSign(detailRes.data);
-
         if (listRes.success) {
           const signProgress = listRes.data?.find(
             (s: any) => s.id === Number(id),
@@ -49,7 +48,6 @@ export default function LessonDetailPage() {
         toast.error("Sign data not found!");
         router.push("/lessons");
       }
-
       setIsLoading(false);
       fetchDashboard();
     };
@@ -58,10 +56,8 @@ export default function LessonDetailPage() {
 
   const handleComplete = async () => {
     if (isMastered || isCompleting) return;
-
     setIsCompleting(true);
     const res = await lessonsService.completeSign(Number(id));
-
     if (res.success) {
       setIsMastered(true);
       toast.success("LEVEL MASTERED!", {
@@ -79,7 +75,7 @@ export default function LessonDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#F4EDE4] text-[#2C3E33]">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-border/50 px-6 py-4">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-border/50 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <GameButton
@@ -101,7 +97,7 @@ export default function LessonDetailPage() {
         </div>
       </nav>
 
-      <main className="pt-28 pb-12 px-6 max-w-7xl mx-auto">
+      <main className="pt-24 pb-12 px-6 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-7 h-[500px] lg:h-[700px]">
             <Sign3DViewer
@@ -110,7 +106,7 @@ export default function LessonDetailPage() {
             />
           </div>
 
-          <div className="lg:col-span-5 space-y-6">
+          <div className="lg:col-span-5 space-y-4">
             <div className="bg-white rounded-[2.5rem] p-8 border-b-8 border-slate-200 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div className="bg-primary/10 px-4 py-1 rounded-full border-2 border-primary/20">
@@ -147,7 +143,7 @@ export default function LessonDetailPage() {
               <div className="pt-4 border-t border-slate-100">
                 <p className="text-muted-foreground font-medium leading-relaxed italic">
                   {sign.description ||
-                    `Analyze the instructor's hand movements for "${sign.nepali_char}". Rotate the view to see the sign from different angles.`}
+                    `Study the instructor's hand movements. When you're ready, enter the Practice Room.`}
                 </p>
               </div>
             </div>
@@ -171,24 +167,52 @@ export default function LessonDetailPage() {
               </div>
             </div>
 
-            <GameButton
-              variant={isMastered ? "duolingo" : "retro"}
-              size="lg"
-              className="w-full py-2  text-3xl shadow-xl"
-              onClick={handleComplete}
-              isLoading={isCompleting}
-              disabled={isMastered}
-            >
-              <div className="flex items-center gap-4">
-                {isMastered ? (
-                  <>
-                    <CheckCircle2 size={32} /> Lesson Completed
-                  </>
-                ) : (
-                  "Complete Lesson !"
+            <div className="space-y-4">
+              {isMastered && (
+                <div className="flex item-center animate-in zoom-in fade-in duration-500">
+                  <GameButton
+                    variant="duolingo"
+                    size="lg"
+                    className="w-full py-2 text-2xl flex items-center gap-3 whitespace-nowrap"
+                    onClick={() => router.push(`/practice/${id}`)}
+                  >
+                    <Video size={28} className="animate-pulse shrink-0" />
+                    <span>READY TO PRACTICE</span>
+                  </GameButton>
+                </div>
+              )}
+
+              {/* 2. COMPLETE BUTTON - Changes to a 'Success' label once done */}
+              <GameButton
+                variant={isMastered ? "retro" : "retro"}
+                size="lg"
+                className={cn(
+                  "w-full py-2 text-2xl shadow-xl transition-all",
+                  isMastered && "opacity-60 saturate-50 cursor-default",
                 )}
-              </div>
-            </GameButton>
+                onClick={handleComplete}
+                isLoading={isCompleting}
+                disabled={isMastered}
+              >
+                <div className="flex items-center gap-4">
+                  {isMastered ? (
+                    <>
+                      <CheckCircle2 size={32} className="text-white" />
+                      LESSON COMPLETED
+                    </>
+                  ) : (
+                    "COMPLETE LESSON !"
+                  )}
+                </div>
+              </GameButton>
+
+              {/* Small Hint for the user */}
+              {!isMastered && (
+                <p className="text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest animate-pulse">
+                  Complete the lesson to unlock practice mode
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </main>

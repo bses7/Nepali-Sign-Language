@@ -83,7 +83,6 @@ class NSLRecognizer:
         return "..."
 
 def run_realtime(model_path, vocab_path):
-    # Standard config for PoseExtractor
     extractor_config = {
         'mediapipe': {
             'static_image_mode': False, 
@@ -113,12 +112,10 @@ def run_realtime(model_path, vocab_path):
 
         prediction = recognizer.predict()
 
-        # Add a dark overlay bar at the top for text readability
         overlay = frame.copy()
         cv2.rectangle(overlay, (0, 0), (frame.shape[1], 75), (0, 0, 0), -1)
         cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
 
-        # Draw the Nepali text
         frame = recognizer.draw_nepali(frame, f"Sign: {prediction}")
 
         cv2.imshow("Nepali Sign Language Recognizer", frame)

@@ -56,6 +56,8 @@ class DashboardOut(BaseModel):
     level: int
     streak_count: int
 
+    phone_number: Optional[str]
+
     coins: int
     
     total_signs: int
@@ -74,6 +76,9 @@ class DashboardOut(BaseModel):
     challenge_progress: int
     challenge_target: int
     can_claim_challenge: bool
+
+    google_id: Optional[str]
+    github_id: Optional[str]
     
     model_config = ConfigDict(from_attributes=True)
 

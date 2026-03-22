@@ -20,7 +20,8 @@ import {
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // Added useRouter
+import { useAuthStore } from "@/lib/store/auth"; // Added useAuthStore
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -32,6 +33,13 @@ const items = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuthStore(); // Access the logout function
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   return (
     <Sidebar className="border-r-8 border-border/50">
@@ -71,7 +79,11 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="bg-white p-4 border-t border-border">
-        <button className="flex items-center gap-4 px-4 py-3 rounded-2xl font-black uppercase text-xs tracking-widest text-destructive hover:bg-destructive/10 transition-all">
+        {/* Added onClick and cursor-pointer style */}
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl font-black uppercase text-xs tracking-widest text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+        >
           <LogOut size={20} />
           <span>Logout</span>
         </button>

@@ -1,14 +1,14 @@
 {
-    "target_char": "छ",
-    "detected_char": "छ",
-    "overall_score": 68.77,
-    "accuracy_percentage": 97.07,
+    "target_char": "ङ",
+    "detected_char": "ङ",
+    "overall_score": 0.0,
+    "accuracy_percentage": 99.43,
     "status": "Needs Improvement",
     "feedback": [
-        "Bend your Index finger slightly.",
-        "Bend your Middle finger slightly.",
-        "Bend your Ring finger more.",
-        "Bend your Pinky finger more."
+        "Straighten your Index finger significantly.",
+        "Straighten your Middle finger significantly.",
+        "Straighten your Ring finger significantly.",
+        "Rotate your wrist slightly."
     ],
-    "timestamp_iso": "2026-02-17T13:26:04"
+    "timestamp_iso": "2026-03-19T09:04:58"
 }

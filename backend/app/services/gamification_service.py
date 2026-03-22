@@ -12,6 +12,12 @@ def check_and_award_badges(db: Session, user: User):
     new_badges_earned = []
     owned_codes = [b.badge_code for b in user.badges]
 
+    stats = user.stats
+    streak = stats.streak_count if stats else 0
+    xp = stats.xp if stats else 0
+    level = stats.level if stats else 1
+    coins = stats.coins if stats else 0
+
     def check_category_complete(cat: SignCategory = None, diff: DifficultyLevel = None):
         query_total = db.query(Sign)
         query_done = db.query(UserProgress).join(Sign).filter(UserProgress.user_id == user.id)
@@ -59,17 +65,17 @@ def check_and_award_badges(db: Session, user: User):
             new_badges_earned.append("NIGHT_OWL")
 
     if "CONSISTENT_LEARNER" not in owned_codes:
-        if user.stats.streak_count >= 7:
+        if streak >= 7:
             award_badge(db, user, "CONSISTENT_LEARNER")
             new_badges_earned.append("CONSISTENT_LEARNER")
 
     if "LEVEL_2" not in owned_codes:
-        if user.stats.level >= 2:
+        if level >= 2:
             award_badge(db, user, "LEVEL_2")
             new_badges_earned.append("LEVEL_2")
 
     if "COIN_500" not in owned_codes:
-        if user.stats.coins >= 500:
+        if coins >= 500:
             award_badge(db, user, "COIN_500")
             new_badges_earned.append("COIN_500")
 

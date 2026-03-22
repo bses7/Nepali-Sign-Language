@@ -7,6 +7,8 @@ export interface DashboardData {
   last_name: string;
   xp: number;
   level: number;
+  role: string;
+  phone_number: string | null;
   streak_count: number;
   total_signs: number;
   completed_signs: number;
@@ -21,6 +23,8 @@ export interface DashboardData {
   challenge_progress: number;
   challenge_target: number;
   can_claim_challenge: boolean;
+  google_id?: string | null; 
+  github_id?: string | null; 
 }
 
 export const usersService = {
@@ -34,9 +38,9 @@ export const usersService = {
     );
 
     if (response.success) {
-      console.log("[v0] Dashboard data fetched successfully");
+      console.log("Dashboard data fetched successfully");
     } else {
-      console.error("[v0] Failed to fetch dashboard:", response.error);
+      console.error("Failed to fetch dashboard:", response.error);
     }
 
     return response;

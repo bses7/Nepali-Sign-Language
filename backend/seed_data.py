@@ -11,43 +11,55 @@ def seed_database():
         print("Syncing Avatars with Visual Attributes...")
         avatars_data = [
             {
-                "name": "Avatar 0", "folder": "avatar", "price": 0,
+                "name": "Rocky", "folder": "avatar", "price": 0,
                 "attr": {
                     "type": "common",
+                    "gender": "male",
                     "face_shape": "oval_rectangular", "skin_color": "#E6B59C", "hair_color": "#6A4B3A",
-                    "eye_color": "#6A4A3A", "clothing_color": "#2F3A4A", "accessories": ["beard", "mustache"]
+                    "eye_color": "#6A4A3A", "clothing_color": "#2F3A4A", "accessories": ["beard", "mustache"],
+                    "shop_animations": [
+                        "BreathingIdle", "Cheering", "HappyIdle", "Idle", "SadIdle", "Salute", "ThoughtfulHeadNod"
+                    ]
                 }
             },
             {
-                "name": "Avatar 1", "folder": "avatar1", "price": 0,
+                "name": "Apollo", "folder": "avatar1", "price": 0,
                 "attr": {
-                    "type": "rare", 
+                    "type": "common", 
+                    "gender": "male",
                     "face_shape": "round_oval", "skin_color": "#F0C4A8", "hair_color": "#1C1C1C",
-                    "eye_color": "#4A342E", "clothing_color": "#9A5A66", "accessories": ["round_glasses_black"]
+                    "eye_color": "#4A342E", "clothing_color": "#9A5A66", "accessories": ["round_glasses_black"],
+                    "shop_animations": ["BreathingIdle", "OffensiveIdle", "ThumbsUp"]
                 }
             },
             {
-                "name": "Avatar 2", "folder": "avatar2", "price": 500,
+                "name": "Adrian", "folder": "avatar2", "price": 500,
                 "attr": {
                     "type": "rare",
+                    "gender": "female",
                     "face_shape": "oval", "skin_color": "#F2C7B5", "hair_color": "#3B2F2F",
-                    "eye_color": "#5A3E36", "clothing_color": "#9A5A66", "accessories": ["round_glasses_black"]
+                    "eye_color": "#5A3E36", "clothing_color": "#9A5A66", "accessories": ["round_glasses_black"],
+                    "shop_animations": ["Angry", "DwarfIdle", "LookingAround", "Thankful"]
                 }
             },
             {
-                "name": "Avatar 3", "folder": "avatar3", "price": 1250,
+                "name": "Bianca", "folder": "avatar3", "price": 1250,
                 "attr": {
                     "type": "legendary", 
+                    "gender": "female",
                     "face_shape": "heart_oval", "skin_color": "#F3C8B2", "hair_color": "#121212",
-                    "eye_color": "#5A4037", "clothing_color": "#2F3338", "accessories": []
+                    "eye_color": "#5A4037", "clothing_color": "#2F3338", "accessories": [],
+                    "shop_animations": ["DwarfIdle", "HandRaising"]
                 }
             },
             {
-                "name": "Avatar 4", "folder": "avatar4", "price": 2500,
+                "name": "Drago", "folder": "avatar4", "price": 2500,
                 "attr": {
                     "type": "legendary",
+                    "gender": "male",
                     "face_shape": "rounded_square", "skin_color": "#9B5E47", "hair_color": "#000000",
-                    "eye_color": "#3A2A24", "clothing_color": "#E9EEF2", "accessories": ["round_glasses_black", "beard"]
+                    "eye_color": "#3A2A24", "clothing_color": "#E9EEF2", "accessories": ["round_glasses_black", "beard"],
+                    "shop_animations": ["BreathingIdle", "SillyDancing"]
                 }
             },
         ]
@@ -57,7 +69,7 @@ def seed_database():
             if not obj:
                 db.add(Avatar(name=a["name"], folder_name=a["folder"], price=a["price"], attributes=a["attr"]))
             else:
-                obj.name = a["name"]
+                obj.name = a["name"] 
                 obj.price = a["price"]
                 obj.attributes = a["attr"]
 

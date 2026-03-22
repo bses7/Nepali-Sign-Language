@@ -76,8 +76,7 @@ def get_dashboard(
     """
     Get all stats needed for the Student Dashboard.
     """
-    user_service.update_streak(db, current_user.stats)
-
+    
     gamification_service.check_and_award_badges(db, current_user)
 
     return user_service.get_dashboard_data(db, current_user)

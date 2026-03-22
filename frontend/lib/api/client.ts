@@ -11,7 +11,6 @@ interface ApiResponse<T> {
   success: boolean;
 }
 
-// Token management utilities
 export const tokenManager = {
   getToken: (): string | null => {
     if (typeof window === "undefined") return null;

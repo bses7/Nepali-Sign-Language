@@ -49,41 +49,12 @@ function ShopContent() {
   } = useAuthStore();
 
   const [avatars, setAvatars] = useState<AvatarItem[]>([]);
-  const [ownedBadges, setOwnedBadges] = useState<string[]>([]);
   const [isClaiming, setIsClaiming] = useState(false);
   const [chestOpen, setChestOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [localShopError, setLocalShopError] = useState<string | null>(null);
   const [badgesList, setBadgesList] = useState<any[]>([]);
-
-  function StatBar({
-    label,
-    value,
-    color,
-  }: {
-    label: string;
-    value: number;
-    color: string;
-  }) {
-    return (
-      <div className="space-y-1">
-        <div className="flex justify-between text-[10px] font-black uppercase">
-          <span>{label}</span>
-          <span className="text-muted-foreground">{value}%</span>
-        </div>
-        <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-          <div
-            className={cn(
-              "h-full rounded-full transition-all duration-1000",
-              color,
-            )}
-            style={{ width: `${value}%` }}
-          />
-        </div>
-      </div>
-    );
-  }
 
   const tabHeaderInfo = {
     avatars: {
@@ -136,6 +107,30 @@ function ShopContent() {
 
   const [showCelebration, setShowCelebration] = useState(false);
   const [activeAnimation, setActiveAnimation] = useState("Idle");
+  const [isShopMode, setIsShopMode] = useState(false);
+
+  const currentAvatar = avatars[currentIndex];
+
+  const playRandomShopAnimation = () => {
+    const availableAnims = currentAvatar?.attributes?.shop_animations || [];
+
+    if (availableAnims.length > 0) {
+      const randomIndex = Math.floor(Math.random() * availableAnims.length);
+      setActiveAnimation(availableAnims[randomIndex]);
+      setIsShopMode(true);
+    } else {
+      // Fallback if this avatar has no shop folder animations
+      setActiveAnimation("Idle");
+      setIsShopMode(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentAvatar) {
+      playRandomShopAnimation();
+      setShowCelebration(false);
+    }
+  }, [currentIndex, avatars]);
 
   const handleAvatarAction = async (avatar: AvatarItem) => {
     if (isProcessing) return;
@@ -160,7 +155,7 @@ function ShopContent() {
         const res = await avatarService.buyAvatar(avatar.id);
 
         if (res.success) {
-          setActiveAnimation("Salute");
+          playRandomShopAnimation();
           setShowCelebration(true);
 
           const storeRes = await avatarService.getAvatarStore();
@@ -170,6 +165,7 @@ function ShopContent() {
           setTimeout(() => {
             setShowCelebration(false);
             setActiveAnimation("Idle");
+            setIsShopMode(false);
           }, 4000);
         } else {
           const errorMsg = res.error || "Transaction failed.";
@@ -225,27 +221,6 @@ function ShopContent() {
 
   const userCoins = dashboard?.coins ?? 0;
   const displayName = dashboard?.first_name || user?.first_name || "Learner";
-
-  const backendBadges = [
-    {
-      name: "Vowel Master",
-      code: "VOWEL_MASTER",
-      desc: "Learned all 13 Nepali vowels.",
-      icon: "👄",
-    },
-    {
-      name: "Early Bird",
-      code: "EARLY_BIRD",
-      desc: "Completed a lesson before 7 AM.",
-      icon: "🌅",
-    },
-    {
-      name: "Consistent Learner",
-      code: "CONSISTENT_LEARNER",
-      desc: "Maintained a 7-day streak!",
-      icon: "🔥",
-    },
-  ];
 
   return (
     <div className="min-h-screen w-full bg-[#F4EDE4] text-[#2C3E33]">
@@ -421,7 +396,7 @@ function ShopContent() {
                                         config,
                                       )}
                                     >
-                                      {type} Class
+                                      {type}
                                     </span>
                                   );
                                 })()}
@@ -547,7 +522,7 @@ function ShopContent() {
                               onClick={() => handleAvatarAction(currentAvatar)}
                               isLoading={isProcessing}
                             >
-                              {currentAvatar.is_owned ? "DEPLOY" : "PURCHASE"}
+                              {currentAvatar.is_owned ? "EQUIP" : "PURCHASE"}
                             </GameButton>
                           )}
                         </div>
@@ -576,11 +551,11 @@ function ShopContent() {
                           </span>
                         </div>
 
-                        {/* 3D VIEWER - The animation changes here automatically */}
                         <Avatar3DViewer
-                          key={`hero-${currentAvatar.id}-${activeAnim}`}
+                          key={`hero-${currentAvatar.id}-${activeAnimation}`}
                           avatarFolder={currentAvatar.folder_name}
-                          animationName={activeAnim}
+                          animationName={activeAnimation}
+                          isShopAnimation={isShopMode}
                           cameraPosition={[0, 0.5, 7.5]}
                           stagePosition={[0, -2.5, 0.1]}
                         />

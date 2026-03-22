@@ -30,6 +30,9 @@ export const API_CONFIG = {
       equip: (avatarId: number) => `/api/v1/avatars/equip/${avatarId}`,
       buy: (avatarId: number) => `/api/v1/avatars/purchase/${avatarId}`,
     },
+    practice: {
+      submit: "/api/v1/practice/save-results",
+    },
   },
 };
 

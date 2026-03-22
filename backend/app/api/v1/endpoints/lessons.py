@@ -35,7 +35,7 @@ def complete_lesson(
     else:
         progress.is_completed = True
 
-    user_service.update_streak(db, current_user.stats)    
+    user_service.sync_daily_stats(db, current_user.stats)    
     XP_PER_LESSON = 500
     current_user.stats.xp += XP_PER_LESSON
     

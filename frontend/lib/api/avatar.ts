@@ -10,12 +10,14 @@ export interface AvatarItem {
   is_owned: boolean;
   attributes: {
     type: string;
+    gender: string;
     face_shape: string;
     skin_color: string;
     hair_color: string;
     eye_color: string;
     clothing_color: string;
     accessories: string[];
+    shop_animations: string[]; 
   };
 }
 
@@ -42,5 +44,10 @@ export const avatarService = {
 
   getThumbnailUrl(folder: string): string {
     return `${API_CONFIG.baseURL}/static/avatars/${folder}/thumbnail.png`;
+  },
+
+  getShopAnimationUrl(folder: string, animation: string): string {
+    const fileName = encodeURIComponent(animation);
+    return `${API_CONFIG.baseURL}/static/avatars/${folder}/shop/${fileName}.glb`;
   },
 };
