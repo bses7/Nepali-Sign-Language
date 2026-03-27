@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.gamification import Badge, user_badges
 from app.models.lesson import Sign, UserProgress, SignCategory, DifficultyLevel
 from app.models.user import User
+from app.services import notification_service
 
 def check_and_award_badges(db: Session, user: User):
     """
@@ -103,6 +104,14 @@ def check_and_award_badges(db: Session, user: User):
 
 def award_badge(db: Session, user: User, badge_code: str):
     badge = db.query(Badge).filter(Badge.badge_code == badge_code).first()
+    
     if badge and badge not in user.badges:
         user.badges.append(badge)
+        notification_service.create_notification(
+            db, 
+            user.id, 
+            "New Badge Unlocked!", 
+            f"Congratulations! You earned the '{badge.name}' badge.", 
+            "success"
+        )
         db.commit()

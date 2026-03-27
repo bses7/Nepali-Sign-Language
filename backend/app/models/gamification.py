@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, Column, Integer, String, ForeignKey, Table, DateTime, Date
+from sqlalchemy import JSON, Boolean, Column, Integer, String, ForeignKey, Table, DateTime, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.session import Base
@@ -49,3 +49,18 @@ class Badge(Base):
     badge_code = Column(String, unique=True)
 
     users = relationship("User", secondary=user_badges, back_populates="badges")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    
+    title = Column(String)  
+    message = Column(String)   
+    type = Column(String)       
+    
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", backref="notifications")

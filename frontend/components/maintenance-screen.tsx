@@ -28,15 +28,15 @@ export function MaintenanceScreen() {
             Under <span className="text-primary">Maintenance</span>
           </h1>
           <p className="text-muted-foreground font-bold leading-relaxed">
-            Our servers are currently offline for a scheduled power-up.
-            We'll be back in the game shortly!
+            Our servers are currently offline for a scheduled power-up. We'll be
+            back in the game shortly!
           </p>
         </div>
 
         <div className="pt-4">
           <GameButton
             variant="duolingo"
-            className="w-full py-6 text-xl"
+            className="w-full py-3 text-xl"
             onClick={() => window.location.reload()}
           >
             <RefreshCcw className="mr-2 h-5 w-5" />

@@ -6,6 +6,8 @@ from app.services.recognition_service import practice_manager
 from app.db.session import get_db
 import json
 
+from app.services import notification_service
+
 router = APIRouter()
 
 @router.websocket("/ws/{target_char}")
@@ -44,6 +46,14 @@ def save_practice_results(
 
         current_user.stats.xp += 100
         current_user.stats.coins += 50
+
+        notification_service.create_notification(
+        db, 
+        current_user.id, 
+        "Practice Complete!", 
+        f"Earned Practice Rewards: +100 XP, +50 Coins!", 
+        "success"
+    )
         
         db.add(current_user.stats) 
         db.commit()

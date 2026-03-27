@@ -387,15 +387,15 @@ export function Roadmap3D({
                     isCurrent={isCurrentProgress}
                     onClick={onLevelClick}
                   />
+          
                 </Html>
 
-                {/* --- LAYER 2: THE OVERLAYS (Floating higher in 3D space) --- */}
                 {(isSelected || isCurrentProgress) && (
                   <Html
                     transform
                     sprite
                     distanceFactor={15}
-                    position={[0, 7.5, 0]} // ATTACHED 2 UNITS HIGHER (Fixes layering)
+                    position={[0, 7.5, 0]} 
                     zIndexRange={[20, 100]}
                   >
                     <div className="flex flex-col items-center pointer-events-none">

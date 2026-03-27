@@ -11,9 +11,9 @@ class NSLFeedbackEngine:
             "Ring": [0, 13, 14, 16],
             "Pinky": [0, 17, 18, 20]
         }
-        self.TOLERANCE = 15.0     
-        self.SLIGHT_LIMIT = 30.0  
-        self.MAJOR_LIMIT = 55.0   
+        self.TOLERANCE = 18.0      # Increased slightly for better user experience
+        self.SLIGHT_LIMIT = 35.0  
+        self.MAJOR_LIMIT = 60.0   
 
     def _get_angle(self, a, b, c):
         ba, bc = a - b, c - b
@@ -25,6 +25,21 @@ class NSLFeedbackEngine:
         if diff_mag <= self.SLIGHT_LIMIT: return "slightly"
         if diff_mag <= self.MAJOR_LIMIT: return "more"
         return "significantly"
+
+    def _is_finger_curled(self, hand_landmarks, finger_name):
+        """
+        Returns True if the finger is tucked into the palm.
+        Uses distance from tip to wrist vs. knuckle to wrist.
+        """
+        tip_idx = self.finger_map[finger_name][3]
+        mcp_idx = self.finger_map[finger_name][1] # The knuckle (base of finger)
+        wrist = hand_landmarks[0]
+        
+        # Euclidean distance in 3D
+        tip_dist = np.linalg.norm(hand_landmarks[tip_idx] - wrist)
+        knuckle_dist = np.linalg.norm(hand_landmarks[mcp_idx] - wrist)
+        
+        return tip_dist < knuckle_dist
 
     def compute_feedback(self, user_pose, user_lh, user_rh, target_char, recognized_char, confidence):
         report = {
@@ -53,18 +68,39 @@ class NSLFeedbackEngine:
         total_error_deg = 0
         
         for finger, idxs in self.finger_map.items():
+            # 1. Get Angles
             u_ang = self._get_angle(user_hand[idxs[1]], user_hand[idxs[2]], user_hand[idxs[3]])
             r_ang = self._get_angle(ref_hand[idxs[1]], ref_hand[idxs[2]], ref_hand[idxs[3]])
             
-            diff = u_ang - r_ang
+            # 2. Check States (Curled vs Straight)
+            u_is_curled = self._is_finger_curled(user_hand, finger)
+            r_is_curled = self._is_finger_curled(ref_hand, finger)
+            
+            diff = u_ang - r_ang 
             mag = abs(diff)
             intensity = self._get_intensity(mag)
 
             if intensity:
-                action = "Bend" if diff > 0 else "Straighten"
-                report["feedback"].append(f"{action} your {finger} finger {intensity}.")
+                # LOGIC IMPROVEMENT:
+                # If reference is CURLED but user is STRAIGHT
+                if r_is_curled and not u_is_curled:
+                    action = f"Curl your {finger} finger"
+                
+                # If reference is STRAIGHT but user is CURLED
+                elif not r_is_curled and u_is_curled:
+                    action = f"Straighten your {finger} finger"
+                
+                # If both are in the same state, but the angle is off (e.g., fist too tight/loose)
+                else:
+                    if diff > 0: # User angle is larger (straighter) than ref
+                        action = f"Bend your {finger} finger"
+                    else: # User angle is smaller (tighter) than ref
+                        action = f"Relax/Open your {finger} finger"
+
+                report["feedback"].append(f"{action} {intensity}.")
                 total_error_deg += (mag - self.TOLERANCE)
 
+        # Wrist rotation logic
         u_wrist_vec = user_hand[9] - user_hand[0]
         r_wrist_vec = ref_hand[9] - ref_hand[0]
         dot = np.dot(u_wrist_vec, r_wrist_vec) / (np.linalg.norm(u_wrist_vec) * np.linalg.norm(r_wrist_vec) + 1e-6)
@@ -75,21 +111,17 @@ class NSLFeedbackEngine:
             report["feedback"].append(f"Rotate your wrist {intensity}.")
             total_error_deg += (wrist_error - self.TOLERANCE)
 
-        # --- SCORING LOGIC ---
-        # 100 points max. Each degree of error (outside tolerance) is a 0.5 point deduction.
-        # Recognition of wrong character results in a massive penalty.
-        
+        # Scoring
         base_score = 100.0
-        deduction = total_error_deg * 0.5
-        
+        deduction = total_error_deg * 0.4 # Slightly reduced penalty
         final_score = max(0, base_score - deduction)
         
         if recognized_char != target_char:
-            final_score = min(final_score, 40.0)
+            final_score = min(final_score, 45.0)
             report["status"] = "Incorrect Sign"
-        elif final_score >= 90:
+        elif final_score >= 88:
             report["status"] = "Excellent"
-            report["feedback"] = ["Great job! The sign is correct. Move on to next."]
+            report["feedback"] = ["Perfect! Hold and move to next."]
         elif final_score >= 70:
             report["status"] = "Good"
         else:

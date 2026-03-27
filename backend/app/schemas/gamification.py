@@ -23,3 +23,13 @@ class BadgeStatusOut(BaseModel):
     earned_at: datetime | None = None 
 
     model_config = ConfigDict(from_attributes=True)
+
+class NotificationOut(BaseModel):
+    id: int
+    title: str
+    message: str
+    type: str
+    is_read: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

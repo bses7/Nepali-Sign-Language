@@ -19,6 +19,8 @@ export const API_CONFIG = {
       badges: "/api/v1/users/badges",
       badgesall: "/api/v1/users/badges/all",
       claim_challenge: "/api/v1/users/claim-challenge",
+      getNotifications: "/api/v1/users/notifications",
+      markNotification: (id: number) => `/api/v1/users/notifications/${id}/read`,
     },
     lessons: {
       signs: "/api/v1/lessons/signs",

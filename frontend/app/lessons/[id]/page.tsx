@@ -128,9 +128,8 @@ export default function LessonDetailPage() {
                   ))}
                 </div>
               </div>
-
               <div className="flex items-center gap-6">
-                <div className="w-24 h-24 bg-slate-50 rounded-3xl border-4 border-slate-100 flex items-center justify-center shadow-inner">
+                <div className="w-48 h-24 bg-slate-50 rounded-3xl border-4 border-slate-100 flex items-center justify-center shadow-inner">
                   <span className="text-6xl font-black text-primary">
                     {sign.nepali_char}
                   </span>
@@ -138,13 +137,38 @@ export default function LessonDetailPage() {
                 <h2 className="text-5xl font-black uppercase tracking-tighter">
                   {sign.title}
                 </h2>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100">
                 <p className="text-muted-foreground font-medium leading-relaxed italic">
-                  {sign.description ||
-                    `Study the instructor's hand movements. When you're ready, enter the Practice Room.`}
+                  Study the instructor's hand movements. When you're ready,
+                  enter the Practice Room.
                 </p>
+              </div>
+              <div className="pt-4 border-t border-slate-100 space-y-4">
+                <p className="text-muted-foreground font-medium leading-relaxed italic">
+                  {typeof sign.description === "object" &&
+                  sign.description !== null
+                    ? sign.description.text
+                    : sign.description ||
+                      `Analyze the instructor's hand movements for "${sign.nepali_char}". Rotate the view to see the sign from different angles.`}
+                </p>
+
+                {sign.description?.image_url && (
+                  <div className="relative group/img">
+                    <div className="absolute inset-0 bg-primary/10 rounded-2xl blur-xl opacity-0 group-hover/img:opacity-100 transition-opacity" />
+                    <div className="relative bg-slate-50 rounded-2xl border-2 border-slate-100 p-2 overflow-hidden shadow-sm">
+                      <p className="text-[8px] font-black uppercase text-muted-foreground mb-1 ml-1 tracking-widest">
+                        Reference Image
+                      </p>
+                      <img
+                        src={`http://localhost:8000${sign.description.image_url}`}
+                        alt="Sign Reference"
+                        className="w-full h-auto rounded-xl object-cover"
+                        onError={(e) =>
+                          (e.currentTarget.style.display = "none")
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

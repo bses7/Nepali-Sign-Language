@@ -74,53 +74,75 @@ def seed_database():
                 obj.attributes = a["attr"]
 
         print("Seeding Vowels...")
-        vowels = [
-            ("A", "अ", DifficultyLevel.EASY), ("AA", "आ", DifficultyLevel.EASY),
-            ("I", "इ", DifficultyLevel.EASY), ("II", "ई", DifficultyLevel.EASY),
-            ("U", "उ", DifficultyLevel.MEDIUM), ("UU", "ऊ", DifficultyLevel.MEDIUM),
-            ("RE", "ऋ", DifficultyLevel.HARD), ("E", "ए", DifficultyLevel.EASY),
-            ("AI", "ऐ", DifficultyLevel.MEDIUM), ("O", "ओ", DifficultyLevel.MEDIUM),
-            ("AU", "औ", DifficultyLevel.MEDIUM), ("AM", "अं", DifficultyLevel.HARD),
-            ("AH", "अः", DifficultyLevel.HARD)
+        vowels_data = [
+            ("A", "अ", "नेपाली वर्णमालाको पहिलो स्वर वर्ण।", DifficultyLevel.EASY),
+            ("AA", "आ", "'आमा' शब्दमा प्रयोग हुने स्वर वर्ण।", DifficultyLevel.EASY),
+            ("I", "इ", "'इमान' बुझाउने छोटो ईकार।", DifficultyLevel.EASY),
+            ("II", "ई", "'ईश्वर' बुझाउने लामो ईकार।", DifficultyLevel.EASY),
+            ("U", "उ", "'उद्धार' बुझाउने छोटो उकार।", DifficultyLevel.MEDIUM),
+            ("UU", "ऊ", "'ऊन' बुझाउने लामो उकार।", DifficultyLevel.MEDIUM),
+            ("RE", "ऋ", "'ऋषि' बुझाउने स्वर वर्ण।", DifficultyLevel.HARD),
+            ("E", "ए", "'एक' बुझाउने स्वर वर्ण।", DifficultyLevel.EASY),
+            ("AI", "ऐ", "'ऐना' बुझाउने स्वर वर्ण।", DifficultyLevel.MEDIUM),
+            ("O", "ओ", "'ओखल' बुझाउने स्वर वर्ण।", DifficultyLevel.MEDIUM),
+            ("AU", "औ", "'औषधि' बुझाउने स्वर वर्ण।", DifficultyLevel.MEDIUM),
+            ("AM", "अं", "'अंगुर' बुझाउने नाके स्वर।", DifficultyLevel.HARD),
+            ("AH", "अः", "विसर्ग लागेको स्वर वर्ण।", DifficultyLevel.HARD)
         ]
-        for code, char, diff in vowels:
+        for code, char, desc, diff in vowels_data:
+            desc_obj = {"text": desc, "image_url": f"/static/signs/vowels/{code}.png"}
             obj = db.query(Sign).filter(Sign.sign_code == code).first()
             if not obj:
-                db.add(Sign(title=code, nepali_char=char, sign_code=code, category=SignCategory.VOWEL, difficulty=diff))
+                db.add(Sign(title=code, nepali_char=char, sign_code=code, category=SignCategory.VOWEL, difficulty=diff, description=desc_obj))
             else:
-                obj.nepali_char = char
-                obj.difficulty = diff
-                obj.category = SignCategory.VOWEL
+                obj.nepali_char = char; obj.difficulty = diff; obj.description = desc_obj
 
         print("Seeding Consonants...")
-        consonants = [
-            ("KA", "क", DifficultyLevel.EASY), ("GA", "ग", DifficultyLevel.EASY),
-            ("MA", "म", DifficultyLevel.EASY), ("NAA", "न", DifficultyLevel.EASY),
-            ("RA", "र", DifficultyLevel.EASY), ("LA", "ल", DifficultyLevel.EASY),
-            ("PA", "प", DifficultyLevel.EASY), ("BA", "ब", DifficultyLevel.EASY),
-            ("YA", "य", DifficultyLevel.EASY), ("WA", "व", DifficultyLevel.EASY),
-            ("D_SHA", "स", DifficultyLevel.EASY), ("HA", "ह", DifficultyLevel.EASY),
-            ("KHA", "ख", DifficultyLevel.MEDIUM), ("GHA", "घ", DifficultyLevel.MEDIUM),
-            ("CHA", "च", DifficultyLevel.MEDIUM), ("CHHA", "छ", DifficultyLevel.MEDIUM),
-            ("JA", "ज", DifficultyLevel.MEDIUM), ("JHA", "झ", DifficultyLevel.MEDIUM),
-            ("TA", "ट", DifficultyLevel.MEDIUM), ("THA", "ठ", DifficultyLevel.MEDIUM),
-            ("DA", "ड", DifficultyLevel.MEDIUM), ("DHA", "ढ", DifficultyLevel.MEDIUM),
-            ("TAA", "त", DifficultyLevel.MEDIUM), ("THAA", "थ", DifficultyLevel.MEDIUM),
-            ("DAA", "द", DifficultyLevel.MEDIUM), ("DHAA", "ध", DifficultyLevel.MEDIUM),
-            ("PHA", "फ", DifficultyLevel.MEDIUM), ("BHA", "भ", DifficultyLevel.MEDIUM),
-            ("T_SHA", "श", DifficultyLevel.MEDIUM), ("M_SHA", "ष", DifficultyLevel.MEDIUM),
-            ("NGA", "ङ", DifficultyLevel.HARD), ("YAN", "ञ", DifficultyLevel.HARD),
-            ("NA", "ण", DifficultyLevel.HARD), ("KSHA", "क्ष", DifficultyLevel.HARD),
-            ("TRA", "त्र", DifficultyLevel.HARD), ("GYA", "ज्ञ", DifficultyLevel.HARD)
+        consonants_data = [
+            ("KA", "क", "'कलम' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("KHA", "ख", "'खरायो' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("GA", "ग", "'गमला' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("GHA", "घ", "'घर' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("NGA", "ङ", "'अङ्ग' मा प्रयोग हुने व्यञ्जन वर्ण।", DifficultyLevel.HARD),
+            ("CHA", "च", "'चरा' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("CHHA", "छ", "'छाता' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("JA", "ज", "'जहाज' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("JHA", "झ", "'झण्डा' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("YAN", "ञ", "'चञ्चल' मा प्रयोग हुने व्यञ्जन वर्ण।", DifficultyLevel.HARD),
+            ("TA", "ट", "'टपरी' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("THA", "ठ", "'ठग' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("DA", "ड", "'डमरु' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("DHA", "ढ", "'ढकनी' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("NA", "ण", "'बाण' मा प्रयोग हुने व्यञ्जन वर्ण।", DifficultyLevel.HARD),
+            ("TAA", "त", "'तराजु' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("THAA", "थ", "'थैली' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("DAA", "द", "'दकल' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("DHAA", "ध", "'धनुष' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("NAA", "न", "'नल' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("PA", "प", "'पुल' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("PHA", "फ", "'फलफूल' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("BA", "ब", "'बल' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("BHA", "भ", "'भालु' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("MA", "म", "'मकल' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("YA", "य", "'यज्ञ' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("RA", "र", "'रथ' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("LA", "ल", "'लौरी' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("WA", "व", "'वकिल' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("T_SHA", "श", "'शङ्ख' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("M_SHA", "ष", "'षट्कोण' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.MEDIUM),
+            ("D_SHA", "स", "'सलाई' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("HA", "ह", "'हलो' बुझाउने व्यञ्जन वर्ण।", DifficultyLevel.EASY),
+            ("KSHA", "क्ष", "'क्षत्री' बुझाउने संयुक्त व्यञ्जन वर्ण।", DifficultyLevel.HARD),
+            ("TRA", "त्र", "'त्रिशूल' बुझाउने संयुक्त व्यञ्जन वर्ण।", DifficultyLevel.HARD),
+            ("GYA", "ज्ञ", "'ज्ञानी' बुझाउने संयुक्त व्यञ्जन वर्ण।", DifficultyLevel.HARD)
         ]
-        for code, char, diff in consonants:
+        for code, char, desc, diff in consonants_data:
+            desc_obj = {"text": desc, "image_url": f"/static/signs/consonants/{code}.png"}
             obj = db.query(Sign).filter(Sign.sign_code == code).first()
             if not obj:
-                db.add(Sign(title=code, nepali_char=char, sign_code=code, category=SignCategory.CONSONANT, difficulty=diff))
+                db.add(Sign(title=code, nepali_char=char, sign_code=code, category=SignCategory.CONSONANT, difficulty=diff, description=desc_obj))
             else:
-                obj.nepali_char = char
-                obj.difficulty = diff
-                obj.category = SignCategory.CONSONANT
+                obj.nepali_char = char; obj.difficulty = diff; obj.description = desc_obj
 
         print("Seeding Badges...")
         badges_data = [

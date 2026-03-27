@@ -1,14 +1,13 @@
 {
-    "target_char": "ङ",
-    "detected_char": "ङ",
-    "overall_score": 0.0,
-    "accuracy_percentage": 99.43,
-    "status": "Needs Improvement",
+    "target_char": "अ",
+    "detected_char": "अ",
+    "overall_score": 75.41,
+    "accuracy_percentage": 99.22,
+    "status": "Good",
     "feedback": [
-        "Straighten your Index finger significantly.",
-        "Straighten your Middle finger significantly.",
-        "Straighten your Ring finger significantly.",
+        "Curl your Index finger more.",
+        "Relax/Open your Middle finger more.",
         "Rotate your wrist slightly."
     ],
-    "timestamp_iso": "2026-03-19T09:04:58"
+    "timestamp_iso": "2026-03-22T10:36:51"
 }

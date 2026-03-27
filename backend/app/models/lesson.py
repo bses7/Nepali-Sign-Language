@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import JSON, Column, Integer, String, Enum, ForeignKey, Boolean, UniqueConstraint, DateTime
+from sqlalchemy import JSON, Column, Integer, String, Enum, ForeignKey, Boolean, UniqueConstraint, DateTime, JSON
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from sqlalchemy.sql import func
@@ -23,7 +23,7 @@ class Sign(Base):
     category = Column(Enum(SignCategory))
     difficulty = Column(Enum(DifficultyLevel))
 
-    description = Column(String, nullable=True)
+    description = Column(JSON, nullable=True) 
     
     order_index = Column(Integer, default=0)
 

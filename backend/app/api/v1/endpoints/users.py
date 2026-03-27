@@ -6,17 +6,19 @@ from app.schemas.user import LeaderboardOut, User, UserCreate
 from app.core.security import get_password_hash
 
 from app.api.deps import get_current_user
-from app.models.gamification import UserStats as StatsModel
+from app.models.gamification import Notification, UserStats as StatsModel
 from app.schemas.user import DashboardOut
 from app.services import user_service
 
 from app.models.lesson import Avatar as AvatarModel
-from app.schemas.gamification import Badge as BadgeSchema
+from app.schemas.gamification import Badge as BadgeSchema, NotificationOut
 from app.services import gamification_service
 
 from app.models.gamification import Badge as BadgeModel, user_badges
 from app.schemas.gamification import BadgeStatusOut
 from sqlalchemy import select
+
+from app.services import notification_service
 
 
 router = APIRouter()
@@ -139,6 +141,14 @@ def claim_reward(
     
     if not success:
         raise HTTPException(status_code=400, detail=message)
+    
+    notification_service.create_notification(
+        db, 
+        current_user.id, 
+        "Claimed Daily Reward!", 
+        f"You just claimed your daily reward of 100 coins!", 
+        "success"
+    )
         
     return {"message": message, "new_balance": current_user.stats.coins}
 
@@ -151,5 +161,29 @@ def claim_challenge(
     success, message = user_service.claim_daily_challenge(db, current_user)
     if not success:
         raise HTTPException(status_code=400, detail=message)
+    
+    notification_service.create_notification(
+        db, 
+        current_user.id, 
+        "Claimed Daily Challenge!", 
+        f"You just claimed your daily challenge reward of 500 XP and 200 coins!", 
+        "success"
+    )
+
     return {"message": message, "xp": current_user.stats.xp, "coins": current_user.stats.coins}
+
+@router.get("/notifications", response_model=list[NotificationOut])
+def get_my_notifications(
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    """Fetch the notification history for the logged-in user."""
+    return db.query(Notification).filter(
+        Notification.user_id == current_user.id
+    ).order_by(Notification.created_at.desc()).limit(20).all()
+
+@router.post("/notifications/{id}/read")
+def read_notification(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    notification_service.mark_as_read(db, current_user.id, id)
+    return {"status": "ok"}
 

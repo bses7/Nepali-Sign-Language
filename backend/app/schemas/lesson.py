@@ -29,6 +29,10 @@ class LessonOut(BaseModel):
 class LessonComplete(BaseModel):
     sign_id: int
 
+class SignDescription(BaseModel):
+    text: str
+    image_url: str
+
 class SignDetail(BaseModel):
     id: int
     title: str
@@ -37,6 +41,6 @@ class SignDetail(BaseModel):
     difficulty: str
     model_url: str     
     animation_name: str 
-    description: Optional[str] = None
+    description: Optional[SignDescription] = None
 
     model_config = ConfigDict(from_attributes=True)

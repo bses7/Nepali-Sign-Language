@@ -23,8 +23,8 @@ export interface DashboardData {
   challenge_progress: number;
   challenge_target: number;
   can_claim_challenge: boolean;
-  google_id?: string | null; 
-  github_id?: string | null; 
+  google_id?: string | null;
+  github_id?: string | null;
 }
 
 export const usersService = {
@@ -68,5 +68,17 @@ export const usersService = {
 
   async claimChallengeReward() {
     return await apiClient.post(API_CONFIG.endpoints.users.claim_challenge, {});
+  },
+
+  async getNotifications() {
+    return await apiClient.get<any[]>(
+      API_CONFIG.endpoints.users.getNotifications,
+    );
+  },
+  async markNotificationRead(id: number) {
+    return await apiClient.post(
+      API_CONFIG.endpoints.users.markNotification(id),
+      {},
+    );
   },
 };

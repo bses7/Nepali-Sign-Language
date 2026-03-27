@@ -5,6 +5,7 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.services import avatar_service, gamification_service
 from app.schemas.lesson import Avatar as AvatarSchema
+from app.services import notification_service
 
 router = APIRouter()
 
@@ -15,12 +16,25 @@ def get_avatar_store(db: Session = Depends(get_db), current_user: User = Depends
 
 @router.post("/purchase/{avatar_id}")
 def buy_avatar(avatar_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Exchange coins for a new avatar."""
+    # 1. Fetch the avatar object first so we have the name
+    avatar = db.query(AvatarSchema).filter(AvatarSchema.id == avatar_id).first()
+    if not avatar:
+        raise HTTPException(status_code=404, detail="Avatar not found")
+
     message, success = avatar_service.purchase_avatar(db, current_user, avatar_id)
     if not success:
         raise HTTPException(status_code=400, detail=message)
     
     gamification_service.check_and_award_badges(db, current_user)
+
+    # 2. Use the avatar object name
+    notification_service.create_notification(
+        db, 
+        current_user.id, 
+        "Avatar Purchased!", 
+        f"You just purchased the {avatar.name} avatar!", 
+        "success"
+    )
     
     return {"message": message}
 

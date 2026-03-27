@@ -25,6 +25,6 @@ export const practiceService = {
     const baseUrl = API_CONFIG.baseURL || "http://localhost:8000/api/v1";
     const wsBase = baseUrl.replace(/^http/, "ws");
 
-    return `${wsBase}/practice/ws/${encodeURIComponent(targetChar)}`;
+    return `${wsBase}/api/v1/practice/ws/${encodeURIComponent(targetChar)}`;
   },
 };

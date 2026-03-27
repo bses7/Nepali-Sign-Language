@@ -14,6 +14,7 @@ from app.services import user_service
 from app.schemas.gamification import Badge as BadgeSchema
 from app.services import gamification_service
 from app.schemas.lesson import SignDetail
+from app.services import notification_service
 
 
 router = APIRouter()
@@ -48,6 +49,14 @@ def complete_lesson(
     sign = db.query(Sign).filter(Sign.id == data.sign_id).first()
     
     user_service.update_daily_challenge(db, current_user.stats, sign)
+
+    notification_service.create_notification(
+        db, 
+        current_user.id, 
+        "Lesson Complete!", 
+        f"You just mastered the sign for {sign.nepali_char}", 
+        "success"
+    )
 
     db.commit()
     return {"message": "Progress saved", "new_xp": current_user.stats.xp, "level": current_user.stats.level, "new_badges": new_badges}
