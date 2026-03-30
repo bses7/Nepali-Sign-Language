@@ -44,40 +44,6 @@ interface Lesson {
   locked?: boolean;
 }
 
-const lessons: Lesson[] = [
-  {
-    name: "Fingerspelling Basics",
-    difficulty: "Beginner",
-    progress: 100,
-    locked: false,
-  },
-  {
-    name: "Common Phrases",
-    difficulty: "Beginner",
-    progress: 65,
-    locked: false,
-  },
-  {
-    name: "Numbers & Time",
-    difficulty: "Intermediate",
-    progress: 40,
-    locked: false,
-  },
-  {
-    name: "Advanced Conversations",
-    difficulty: "Advanced",
-    progress: 0,
-    locked: false,
-  },
-];
-
-const leaderboardData = [
-  { rank: 1, name: "Alex", level: 15, isYou: false },
-  { rank: 2, name: "Jordan", level: 14, isYou: false },
-  { rank: 3, name: "You", level: 12, isYou: true },
-  { rank: 4, name: "Casey", level: 11, isYou: false },
-];
-
 export default function Dashboard() {
   const router = useRouter();
   const {
@@ -330,6 +296,7 @@ export default function Dashboard() {
                 <XPBar
                   current={userStats.currentXP}
                   max={userStats.maxXP}
+                  min={userStats.maxXP - 1000}
                   level={userStats.level}
                 />
               </div>

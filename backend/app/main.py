@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.core.config import settings
 from app.api.v1.endpoints import avatars, users  
-from app.api.v1.endpoints import users, auth, lessons, practice
+from app.api.v1.endpoints import users, auth, lessons, practice, quiz
 
 from fastapi.staticfiles import StaticFiles
 import os
@@ -15,6 +15,7 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(lessons.router, prefix="/api/v1/lessons", tags=["lessons"])
 app.include_router(avatars.router, prefix="/api/v1/avatars", tags=["avatars"])
 app.include_router(practice.router, prefix="/api/v1/practice", tags=["practice"])
+app.include_router(quiz.router, prefix="/api/v1/quiz", tags=["quiz"])
 
 origins = [
     "http://localhost:3000",

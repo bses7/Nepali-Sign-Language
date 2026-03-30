@@ -20,7 +20,8 @@ export const API_CONFIG = {
       badgesall: "/api/v1/users/badges/all",
       claim_challenge: "/api/v1/users/claim-challenge",
       getNotifications: "/api/v1/users/notifications",
-      markNotification: (id: number) => `/api/v1/users/notifications/${id}/read`,
+      markNotification: (id: number) =>
+        `/api/v1/users/notifications/${id}/read`,
     },
     lessons: {
       signs: "/api/v1/lessons/signs",
@@ -34,6 +35,11 @@ export const API_CONFIG = {
     },
     practice: {
       submit: "/api/v1/practice/save-results",
+    },
+    quiz: {
+      generate: (category: string, difficulty: string) =>
+        `/api/v1/quiz/generate?category=${category}&difficulty=${difficulty}`,
+      submit: "/api/v1/quiz/submit",
     },
   },
 };

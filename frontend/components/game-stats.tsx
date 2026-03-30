@@ -9,19 +9,23 @@ import { useRouter } from "next/navigation";
 interface XPBarProps {
   current: number;
   max: number;
+  min: number;
   level: number;
   className?: string;
   showLabel?: boolean;
 }
 
-export const XPBar: React.FC<XPBarProps> = ({ current, max, level }) => {
-  const percentage = (current / max) * 100;
+export const XPBar: React.FC<XPBarProps> = ({ current, max, min, level }) => {
+  const progress = current - min;
+  const range = max - min;
+  const percentage = Math.min(Math.max((progress / range) * 100, 0), 100);
+
   return (
     <div className="w-full">
       <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-muted-foreground">
         <span>Level {level}</span>
         <span>
-          {current} / {max} XP
+          {progress} / {range} XP
         </span>
       </div>
       <div className="relative w-full h-10 bg-slate-100 border-b-4 border-slate-200 rounded-2xl overflow-hidden">
@@ -29,7 +33,6 @@ export const XPBar: React.FC<XPBarProps> = ({ current, max, level }) => {
           className="h-full bg-gradient-to-r from-primary to-[#8dc63f] transition-all duration-1000 shadow-[inset_0_4px_0_rgba(255,255,255,0.3)]"
           style={{ width: `${percentage}%` }}
         />
-        {/* Animated Gloss Effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_3s_infinite]" />
       </div>
     </div>

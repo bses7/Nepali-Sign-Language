@@ -14,6 +14,8 @@ import * as THREE from "three";
 import { MapPin } from "lucide-react";
 import { RoadmapNode } from "./roadmap-node";
 import { SignPreviewCard } from "./sign-preview-card";
+import { QuizLamp } from "./quiz-node";
+import { QuizPreviewCard } from "./quiz-preview-card";
 
 // --- GLTF LOADING HELPER ---
 function GltfModel({ path, ...props }: { path: string } & any) {
@@ -166,7 +168,11 @@ export function Roadmap3D({
   const ROAD_PADDING = 12;
 
   const sortedSigns = useMemo(
-    () => [...signs].sort((a, b) => a.id - b.id),
+    () =>
+      [...signs].sort((a, b) => {
+        const diffMap: any = { easy: 1, medium: 2, hard: 3 };
+        return diffMap[a.difficulty] - diffMap[b.difficulty] || a.id - b.id;
+      }),
     [signs],
   );
   const currentIndex = useMemo(() => {
@@ -175,6 +181,11 @@ export function Roadmap3D({
   }, [sortedSigns]);
 
   const totalLength = sortedSigns.length * 8;
+
+  const isTierCompleted = (difficulty: string) => {
+    const tierSigns = signs.filter((s: any) => s.difficulty === difficulty);
+    return tierSigns.length > 0 && tierSigns.every((s: any) => s.is_completed);
+  };
 
   const curve = useMemo(() => {
     const pts = [];
@@ -387,7 +398,6 @@ export function Roadmap3D({
                     isCurrent={isCurrentProgress}
                     onClick={onLevelClick}
                   />
-          
                 </Html>
 
                 {(isSelected || isCurrentProgress) && (
@@ -395,7 +405,7 @@ export function Roadmap3D({
                     transform
                     sprite
                     distanceFactor={15}
-                    position={[0, 7.5, 0]} 
+                    position={[0, 7.5, 0]}
                     zIndexRange={[20, 100]}
                   >
                     <div className="flex flex-col items-center pointer-events-none">
@@ -407,12 +417,6 @@ export function Roadmap3D({
                           />
                         ) : isCurrentProgress ? (
                           <div className="flex flex-col items-center animate-float">
-                            {/* <div className="w-24 h-32 bg-slate-900 rounded-[2rem] border-4 border-yellow-400 overflow-hidden shadow-2xl">
-                              <Avatar3DViewer
-                                avatarFolder={avatarFolder}
-                                className="scale-110 translate-y-6"
-                              />
-                            </div> */}
                             <MapPin
                               className="text-yellow-400 fill-yellow-100 mt-2"
                               size={36}
@@ -423,6 +427,64 @@ export function Roadmap3D({
                     </div>
                   </Html>
                 )}
+
+                {(() => {
+                  const isLastOfTier =
+                    i < sortedSigns.length - 1
+                      ? sortedSigns[i].difficulty !==
+                        sortedSigns[i + 1].difficulty
+                      : true;
+
+                  if (isLastOfTier) {
+                    const qZ = z - 6;
+                    const qX = x + (i % 2 === 0 ? 4 : -4); // Place lamp on the side of the road
+                    const qSelected =
+                      selectedSign?.id === `quiz-${sign.difficulty}`;
+                    const qUnlocked = isTierCompleted(sign.difficulty);
+
+                    return (
+                      <group position={[qX - x, 0, qZ - z]}>
+                        {/* 3D Stone Pedestal for the Lamp */}
+                        <mesh position={[0, -0.45, 0]} receiveShadow>
+                          <cylinderGeometry args={[1.5, 1.6, 0.2, 32]} />
+                          <meshStandardMaterial
+                            color="#475569"
+                            roughness={0.8}
+                          />
+                        </mesh>
+
+                        <QuizLamp
+                          isLocked={!qUnlocked}
+                          isCompleted={false}
+                          onClick={() =>
+                            onLevelClick({
+                              id: `quiz-${sign.difficulty}`,
+                              difficulty: sign.difficulty,
+                              category: sign.category,
+                            })
+                          }
+                        />
+
+                        {/* THE POP-UP CARD (Stays as HTML) */}
+                        <Html
+                          transform
+                          sprite
+                          distanceFactor={25}
+                          position={[0, 4, 0]}
+                          zIndexRange={[20, 100]}
+                        >
+                          {qSelected && (
+                            <QuizPreviewCard
+                              difficulty={sign.difficulty}
+                              category={sign.category}
+                              onClose={() => onLevelClick(null)}
+                            />
+                          )}
+                        </Html>
+                      </group>
+                    );
+                  }
+                })()}
               </group>
             );
           })}

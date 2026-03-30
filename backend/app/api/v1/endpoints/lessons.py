@@ -37,12 +37,8 @@ def complete_lesson(
         progress.is_completed = True
 
     user_service.sync_daily_stats(db, current_user.stats)    
-    XP_PER_LESSON = 500
-    current_user.stats.xp += XP_PER_LESSON
     
-    new_level = (current_user.stats.xp // 1000) + 1
-    if new_level > current_user.stats.level:
-        current_user.stats.level = new_level
+    user_service.add_xp(db, current_user, 500)
     
     new_badges = gamification_service.check_and_award_badges(db, current_user)
 

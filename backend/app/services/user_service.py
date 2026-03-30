@@ -184,9 +184,40 @@ def claim_daily_challenge(db: Session, user: User):
     if stats.last_challenge_claim_date == today:
         return False, "Daily challenge reward already claimed today."
 
-    stats.xp = (stats.xp or 0) + 500
+    add_xp(db, user, 500)
     stats.coins = (stats.coins or 0) + 200
     stats.last_challenge_claim_date = today
     
     db.commit()
     return True, "Challenge complete! 500 XP and 200 Coins awarded."
+
+def add_xp(db: Session, user: User, amount: int):
+    """
+    Adds XP to a user and automatically handles Level Up logic and notifications.
+    """
+    stats = user.stats
+    if not stats:
+        return 
+
+    stats.xp = (stats.xp or 0) + amount
+
+    new_level = (stats.xp // 1000) + 1
+
+    if new_level > stats.level:
+        stats.level = new_level
+        
+        from app.services import notification_service
+        notification_service.create_notification(
+            db, 
+            user.id, 
+            "🎊 Level Up!", 
+            f"Amazing work! You've reached Level {new_level}!", 
+            "success"
+        )
+        
+        from app.services import gamification_service
+        gamification_service.check_and_award_badges(db, user)
+
+    db.add(stats)
+    db.commit()
+    return stats

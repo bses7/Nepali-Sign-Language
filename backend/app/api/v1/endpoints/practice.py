@@ -7,6 +7,7 @@ from app.db.session import get_db
 import json
 
 from app.services import notification_service
+from app.services import user_service
 
 router = APIRouter()
 
@@ -44,7 +45,7 @@ def save_practice_results(
         if not current_user.stats:
              return {"success": False, "message": "User stats not found"}
 
-        current_user.stats.xp += 100
+        user_service.add_xp(db, current_user, 100)
         current_user.stats.coins += 50
 
         notification_service.create_notification(

@@ -1,7 +1,8 @@
-from sqlalchemy import JSON, Boolean, Column, Integer, String, ForeignKey, Table, DateTime, Date
+from sqlalchemy import JSON, Boolean, Column, Integer, String, ForeignKey, Table, DateTime, Date, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.session import Base
+from app.models.lesson import DifficultyLevel, SignCategory
 
 class UserStats(Base):
     __tablename__ = "user_stats"
@@ -64,3 +65,14 @@ class Notification(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", backref="notifications")
+
+class QuizResult(Base):
+    __tablename__ = "quiz_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    category = Column(Enum(SignCategory))
+    difficulty = Column(Enum(DifficultyLevel))
+    score = Column(Integer) 
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
