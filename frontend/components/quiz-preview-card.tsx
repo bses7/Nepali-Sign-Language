@@ -7,7 +7,7 @@ export function QuizPreviewCard({ difficulty, category, onClose }: any) {
   return (
     <div className="relative flex flex-col items-center z-[200] animate-pop-spin">
       {/* Small version of the card */}
-      <div className="bg-white rounded-[1.5rem] w-42 p-2.5 border-b-[6px] border-slate-200 shadow-2xl space-y-2 relative">
+      <div className="bg-white rounded-[1.5rem] w-32 p-2.5 border-b-[6px] border-slate-200 shadow-2xl space-y-2 relative">
         <button
           onClick={onClose}
           className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-lg border-b-2 border-red-700 active:translate-y-0.5"
@@ -16,7 +16,7 @@ export function QuizPreviewCard({ difficulty, category, onClose }: any) {
         </button>
         <div className="text-center space-y-1">
           <div className="inline-block bg-blue-100 p-3 rounded-2xl mb-2">
-            <BrainCircuit className="text-blue-600" size={28} />
+            <BrainCircuit className="text-blue-600" size={24} />
           </div>
           <h3 className="font-display text-md font-black text-foreground uppercase leading-none">
             {difficulty} Mastery
@@ -34,7 +34,7 @@ export function QuizPreviewCard({ difficulty, category, onClose }: any) {
             (window.location.href = `/quiz?category=${category}&difficulty=${difficulty}`)
           }
         >
-          START QUIZ
+          QUIZ
         </GameButton>
       </div>
       <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-white" />

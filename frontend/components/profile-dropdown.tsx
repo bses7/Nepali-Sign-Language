@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store/auth";
-import { User, LogOut, Bell, ChevronLeft, Check } from "lucide-react"; // Import new icons
+import { User, LogOut, Bell, ChevronLeft } from "lucide-react";
 import { usersService } from "@/lib/api/users";
 import { cn } from "@/lib/utils";
 
@@ -14,20 +14,24 @@ interface ProfileDropdownProps {
 export const ProfileDropdown = ({ userName }: ProfileDropdownProps) => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false); // Toggle state
+  const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { logout } = useAuthStore();
 
-  // Fetch notifications when dropdown opens
+  // 1. FETCH NOTIFICATIONS ON MOUNT (To show the dot immediately)
   useEffect(() => {
-    if (isOpen) {
+    const fetchNotifs = () => {
       usersService.getNotifications().then((res) => {
         if (res.success) setNotifications(res.data || []);
       });
-    }
-  }, [isOpen]);
+    };
+    fetchNotifs();
+  }, []);
+
+  // Calculate unread count
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -36,7 +40,7 @@ export const ProfileDropdown = ({ userName }: ProfileDropdownProps) => {
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
-        setShowNotifications(false); // Reset to menu view on close
+        setShowNotifications(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -60,17 +64,33 @@ export const ProfileDropdown = ({ userName }: ProfileDropdownProps) => {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Profile Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="h-10 w-10 rounded-full bg-linear-to-br from-primary to-secondary flex items-center justify-center text-white font-bold hover:shadow-lg hover:scale-110 transition-all duration-200 cursor-pointer focus:outline-none"
+        className={cn(
+          "relative h-12 w-12 flex items-center justify-center transition-all duration-200 cursor-pointer focus:outline-none",
+          "bg-white rounded-2xl  hover:bg-slate-50 active:translate-y-1 active:border-b-0",
+          isOpen && "translate-y-1 border-b-0",
+        )}
       >
-        {userName.charAt(0).toUpperCase()}
+        <div className="h-9 w-9 rounded-3xl bg-linear-to-br from-primary to-secondary flex items-center justify-center text-white font-black text-lg shadow-inner ring-2 ring-white/50">
+          {userName.charAt(0).toUpperCase()}
+        </div>
+
+        {unreadCount > 0 && (
+          <div className="absolute -top-1.5 -right-1.5 flex h-5 w-5 z-10">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-5 w-5 bg-orange-500 border-2 border-white items-center justify-center">
+              <span className="text-[10px] text-white font-black leading-none">
+                {unreadCount}
+              </span>
+            </span>
+          </div>
+        )}
       </button>
 
+      {/* --- DROPDOWN (Style preserved exactly as requested) --- */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-64 glass rounded-2xl border-2 border-primary/20 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-          {/* HEADER: Name + Bell Toggle */}
           <div className="px-4 py-4 border-b border-border/50 bg-muted/30 flex items-center justify-between">
             {!showNotifications ? (
               <>
@@ -87,7 +107,7 @@ export const ProfileDropdown = ({ userName }: ProfileDropdownProps) => {
                   className="p-1.5 hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-colors relative"
                 >
                   <Bell size={18} />
-                  {notifications.some((n) => !n.is_read) && (
+                  {unreadCount > 0 && (
                     <span className="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full border border-white" />
                   )}
                 </button>
@@ -105,7 +125,6 @@ export const ProfileDropdown = ({ userName }: ProfileDropdownProps) => {
 
           <div className="py-2">
             {!showNotifications ? (
-              /* --- VIEW 1: REGULAR MENU --- */
               <>
                 <button
                   onClick={() => {
@@ -114,7 +133,7 @@ export const ProfileDropdown = ({ userName }: ProfileDropdownProps) => {
                   }}
                   className="w-full px-4 py-3 text-left text-foreground hover:bg-primary/10 transition-colors flex items-center gap-3 group"
                 >
-                  <User className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+                  <User className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                   <span className="font-medium text-sm">My Profile</span>
                 </button>
 
@@ -129,7 +148,6 @@ export const ProfileDropdown = ({ userName }: ProfileDropdownProps) => {
                 </button>
               </>
             ) : (
-              /* --- VIEW 2: NOTIFICATIONS --- */
               <div className="max-h-[160px] overflow-y-auto custom-scrollbar px-2 space-y-1">
                 {notifications.length > 0 ? (
                   notifications.map((n) => (

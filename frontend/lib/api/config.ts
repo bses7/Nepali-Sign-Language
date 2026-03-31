@@ -27,6 +27,7 @@ export const API_CONFIG = {
       signs: "/api/v1/lessons/signs",
       sign_id: (id: string) => `/api/v1/lessons/signs/${id}`,
       complete_sign: "/api/v1/lessons/complete",
+      upload_sign: "/api/v1/lessons/upload-sign",
     },
     avatar: {
       store: "/api/v1/avatars/store",
@@ -40,6 +41,9 @@ export const API_CONFIG = {
       generate: (category: string, difficulty: string) =>
         `/api/v1/quiz/generate?category=${category}&difficulty=${difficulty}`,
       submit: "/api/v1/quiz/submit",
+    },
+    teachers: {
+      submit_sign: "/api/v1/teacher/upload-sign",
     },
   },
 };

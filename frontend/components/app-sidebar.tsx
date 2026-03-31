@@ -18,28 +18,39 @@ import {
   Trophy,
   ShoppingBag,
   LogOut,
+  PlusCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation"; // Added useRouter
-import { useAuthStore } from "@/lib/store/auth"; // Added useAuthStore
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/store/auth";
 import { cn } from "@/lib/utils";
-
-const items = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Lessons", url: "/lessons", icon: BookOpen },
-  { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
-  { title: "Shop", url: "/shop", icon: ShoppingBag },
-];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuthStore(); // Access the logout function
+  const { logout, dashboard } = useAuthStore();
+
+  const isTeacher = dashboard?.role === "teacher";
 
   const handleLogout = () => {
     logout();
     router.push("/login");
   };
+
+  const menuItems = [
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Lessons", url: "/lessons", icon: BookOpen },
+    { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
+    { title: "Shop", url: "/shop", icon: ShoppingBag },
+  ];
+
+  if (isTeacher) {
+    menuItems.push({
+      title: "Contribute",
+      url: "/teacher/contribute",
+      icon: PlusCircle,
+    });
+  }
 
   return (
     <Sidebar className="border-r-8 border-border/50">
@@ -52,7 +63,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
-              {items.map((item) => {
+              {menuItems.map((item) => {
                 const isActive = pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -79,7 +90,6 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="bg-white p-4 border-t border-border">
-        {/* Added onClick and cursor-pointer style */}
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl font-black uppercase text-xs tracking-widest text-destructive hover:bg-destructive/10 transition-all cursor-pointer"

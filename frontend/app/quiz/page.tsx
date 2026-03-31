@@ -14,6 +14,9 @@ import {
   Zap,
   Loader2,
   Flame,
+  HelpCircle,
+  Lightbulb,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -35,9 +38,9 @@ function QuizContent() {
   const [status, setStatus] = useState<"loading" | "playing" | "finished">(
     "loading",
   );
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state for backend call
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  // Timer State
   const [timeLeft, setTimeLeft] = useState(30);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -53,14 +56,12 @@ function QuizContent() {
     });
   }, [category, difficulty, router]);
 
-  // TIMER LOGIC
   useEffect(() => {
-    if (status === "playing" && timeLeft > 0) {
+    if (status === "playing" && timeLeft > 0 && !isHelpOpen) {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
-    } else if (timeLeft === 0 && status === "playing") {
-      // Auto-finish if time runs out
+    } else if (timeLeft === 0 && status === "playing" && !isHelpOpen) {
       if (timerRef.current) clearInterval(timerRef.current);
       setStatus("finished");
       toast.error("TIME EXPIRED!");
@@ -69,7 +70,7 @@ function QuizContent() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [status, timeLeft]);
+  }, [status, timeLeft, isHelpOpen]);
 
   const handleAnswer = (optionId: number) => {
     if (isAnswered) return;
@@ -135,7 +136,7 @@ function QuizContent() {
       )}
 
       {/* 2. HUD TOP NAVIGATION */}
-      <nav className="absolute top-0 left-0 right-0 z-50 p-8 flex justify-between items-center pointer-events-none">
+      <nav className="absolute top-0 left-0 right-0 z-50 p-12 flex justify-between items-center pointer-events-none">
         <div className="flex flex-col gap-4 pointer-events-auto">
           <div className="bg-black/60 backdrop-blur-xl px-6 py-2 rounded-2xl border border-white/10 shadow-2xl flex items-center gap-4">
             <div className="flex flex-col">
@@ -202,8 +203,8 @@ function QuizContent() {
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-[2.5rem] border-b-8 border-slate-200 shadow-2xl flex items-center gap-4 pointer-events-auto">
-          <div className="bg-primary/10 p-2 rounded-xl">
+        <div className="bg-white p-4 rounded-[2.5rem] border-b-4 border-slate-200 shadow-2xl flex items-center gap-4 pointer-events-auto">
+          <div className=" p-2 rounded-xl">
             <BrainCircuit className="text-primary" />
           </div>
           <div className="text-right">
@@ -345,11 +346,127 @@ function QuizContent() {
           </div>
         )}
       </main>
+
+      <div className="absolute bottom-10 right-10 z-50">
+        <button
+          onClick={() => setIsHelpOpen(true)}
+          className="w-16 h-16 bg-primary border-b-8 border-green-900 rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 active:translate-y-2 transition-all"
+        >
+          <HelpCircle size={32} />
+        </button>
+      </div>
+
+      <div className="absolute bottom-10 right-10 z-50">
+        <button
+          onClick={() => setIsHelpOpen(true)}
+          className="w-16 h-16 bg-primary border-b-8 border-green-900 rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 active:translate-y-2 active:border-b-0 transition-all group"
+        >
+          <HelpCircle
+            size={32}
+            className="group-hover:rotate-12 transition-transform"
+          />
+        </button>
+      </div>
+
+      {isHelpOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white rounded-[3rem] w-full max-w-lg p-10 border-b-[12px] border-slate-200 shadow-2xl relative animate-pop-spin max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="text-center space-y-8">
+              <div className="inline-block bg-blue-100 p-5 rounded-[2rem] border-b-4 border-blue-200 text-blue-600">
+                <BrainCircuit size={48} />
+              </div>
+
+              <h3 className="font-display text-4xl font-black uppercase tracking-tighter text-foreground leading-none">
+                Quiz Briefing
+              </h3>
+
+              <div className="space-y-6 text-left">
+                {/* Section 1: Objective */}
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary ml-2">
+                    Objective
+                  </p>
+
+                  {/* Step 1: Observe */}
+                  <div className="flex gap-4 p-4 bg-slate-50 rounded-2xl border-b-4 border-slate-100">
+                    <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-black shadow-sm">
+                      1
+                    </div>
+                    <p className="text-sm font-bold text-muted-foreground leading-snug">
+                      Watch the{" "}
+                      <span className="text-primary font-black uppercase">
+                        Preview
+                      </span>{" "}
+                      on the left. The instructor will perform a random sign.
+                    </p>
+                  </div>
+
+                  {/* Step 2: Select */}
+                  <div className="flex gap-4 p-4 bg-slate-50 rounded-2xl border-b-4 border-slate-100">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-black shadow-sm">
+                      2
+                    </div>
+                    <p className="text-sm font-bold text-muted-foreground leading-snug">
+                      Identify the character! Tap the matching{" "}
+                      <span className="text-blue-500 font-black uppercase">
+                        Nepali Alphabet
+                      </span>{" "}
+                      from the options on the right.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 ml-2">
+                    Time Bound
+                  </p>
+                  <div className="flex items-center gap-4 p-4 bg-red-50 rounded-2xl border-b-4 border-red-100">
+                    <Clock
+                      className="text-red-500 animate-spin-slow"
+                      size={24}
+                    />
+                    <p className="text-xs font-bold text-red-900 leading-tight">
+                      <span className="font-black uppercase">
+                        30 Second Limit:
+                      </span>{" "}
+                      The system will auto-submit your score when the timer hits
+                      zero. Be fast!
+                    </p>
+                  </div>
+                </div>
+
+                {/* Section 3: Bounty */}
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-600 ml-2">
+                    Potential Reward
+                  </p>
+                  <div className="flex items-center gap-4 p-4 bg-yellow-50 rounded-2xl border-b-4 border-yellow-100">
+                    <Trophy className="text-yellow-500" size={24} />
+                    <p className="text-xs font-bold text-yellow-900 leading-tight">
+                      A{" "}
+                      <span className="font-black uppercase">
+                        Perfect Score
+                      </span>{" "}
+                      grants a +50 bonus coin reward!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <GameButton
+                variant="duolingo"
+                className="w-full py-2 text-md "
+                onClick={() => setIsHelpOpen(false)}
+              >
+                Continue QUIZ
+              </GameButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-// ... Loading and Page wrapper logic remains the same ...
 
 function LoadingScreen({ message }: { message: string }) {
   return (

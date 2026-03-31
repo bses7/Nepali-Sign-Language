@@ -55,7 +55,6 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#F4EDE4] text-[#2C3E33]">
-      {/* 1. DASHBOARD-STYLE NAVIGATION */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b-4 border-border/50 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -101,7 +100,6 @@ export default function LeaderboardPage() {
       </nav>
 
       <main className="pt-28 pb-12 px-4 max-w-4xl mx-auto space-y-8">
-        {/* 2. HERO HEADER */}
         <div className="text-center space-y-4">
           <div className="inline-block bg-yellow-400 p-4 rounded-[2rem] border-b-8 border-yellow-600 animate-bounce mb-2">
             <Trophy size={48} className="text-white fill-white" />
@@ -114,16 +112,14 @@ export default function LeaderboardPage() {
           </p>
         </div>
 
-        {/* 3. THE LEADERBOARD LIST */}
         <div className="bg-white rounded-[3rem] p-4 md:p-8 border-b-[12px] border-slate-200 shadow-2xl space-y-4">
           {leaderboard.map((entry, index) => {
             const rank = index + 1;
-            // Recognized the current user by comparing emails from backend
             const isMe = entry.email === user?.email;
 
             return (
               <div
-                key={entry.email || index}
+                key={`${entry.email}-${index}`}
                 className={cn(
                   "relative flex items-center justify-between p-5 rounded-[2rem] border-2 transition-all duration-300",
                   isMe

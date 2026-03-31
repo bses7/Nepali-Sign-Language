@@ -58,3 +58,19 @@ class UserProgress(Base):
     __table_args__ = (UniqueConstraint('user_id', 'sign_id', name='_user_sign_uc'),)
 
     sign = relationship("Sign", back_populates="user_progress")
+
+
+class SignContribution(Base):
+    __tablename__ = "sign_contributions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    teacher_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    
+    title = Column(String, index=True)
+    description = Column(String)
+    video_url = Column(String)
+    
+    status = Column(String, default="pending") 
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    teacher = relationship("User", backref="contributions")

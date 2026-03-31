@@ -125,7 +125,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* AUTHENTICATION SECTION */}
           <div className="bg-white rounded-[2.5rem] p-8 border-b-8 border-slate-200 shadow-xl space-y-6">
             <h3 className="font-black uppercase text-xs tracking-widest text-muted-foreground flex items-center gap-2">
               <ShieldCheck size={16} /> Authentication Security

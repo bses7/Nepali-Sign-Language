@@ -8,6 +8,7 @@ export interface DashboardData {
   xp: number;
   level: number;
   role: string;
+  is_verified_teacher: boolean;
   phone_number: string | null;
   streak_count: number;
   total_signs: number;

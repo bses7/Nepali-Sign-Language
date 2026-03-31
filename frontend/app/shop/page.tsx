@@ -515,9 +515,7 @@ function ShopContent() {
                               className={cn(
                                 "w-full py-2 text-xl shadow-lg transition-all active:scale-95",
                                 !currentAvatar.is_owned &&
-                                  (dashboard?.coins || 0) <
-                                    currentAvatar.price &&
-                                  "opacity-50 grayscale",
+                                  (dashboard?.coins || 0) < currentAvatar.price,
                               )}
                               onClick={() => handleAvatarAction(currentAvatar)}
                               isLoading={isProcessing}
@@ -529,10 +527,8 @@ function ShopContent() {
                       </div>
                     </div>
 
-                    {/* --- 2. RIGHT SIDE: THE HERO SHOWCASE (3D Preview) --- */}
                     <div className="lg:col-span-7 relative group order-1 lg:order-2">
                       <div className="h-[450px] md:h-[550px] lg:h-[700px] w-full rounded-[4rem] bg-slate-950 border-4 border-white shadow-2xl overflow-hidden relative">
-                        {/* HOLOGRAPHIC OVERLAYS */}
                         <div className="absolute inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.5)_100%)]" />
                         <div className="absolute inset-0 opacity-5 pointer-events-none z-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,255,255,0.05),rgba(255,255,255,0),rgba(255,255,255,0.05))] bg-[length:100%_4px,20px_100%]" />
 

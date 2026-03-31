@@ -43,7 +43,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background px-4 py-20 relative overflow-hidden">
-      {/* 1. FLOATING BACKGROUND ELEMENTS (Matching Signup) */}
       <div className="absolute inset-0 pointer-events-none">
         <Sparkles
           className="absolute top-[15%] left-[10%] text-primary/20 animate-float"

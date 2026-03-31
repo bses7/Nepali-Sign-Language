@@ -113,8 +113,8 @@ export const useAuthStore = create<AuthStore>()(
 
           if (response.success) {
             set({
-              isAuthenticated: true,
-              token: response.data?.access_token || null,
+              // isAuthenticated: true,
+              // token: response.data?.access_token || null,
               user: {
                 email,
                 first_name: firstName,

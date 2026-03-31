@@ -25,6 +25,7 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     is_superuser: bool
+    is_verified_teacher: bool
     created_at: datetime
 
 class UserStatsSchema(BaseModel):
@@ -37,6 +38,7 @@ class UserStatsSchema(BaseModel):
 class User(UserBase):
     id: int
     is_superuser: bool
+    is_verified_teacher: bool
     created_at: datetime
     stats: Optional[UserStatsSchema] = None
 
@@ -51,7 +53,8 @@ class DashboardOut(BaseModel):
     first_name: str
     last_name: str
     role: str
-    
+    is_verified_teacher: bool
+
     xp: int
     level: int
     streak_count: int

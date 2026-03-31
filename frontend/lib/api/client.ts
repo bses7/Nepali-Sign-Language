@@ -36,11 +36,10 @@ export const apiClient = {
       const url = getFullURL(endpoint);
       const token = tokenManager.getToken();
 
-      // Check if we are sending Form Data
-      const isFormData = options.body instanceof URLSearchParams;
+      const isFormData =
+        typeof FormData !== "undefined" && options.body instanceof FormData;
 
       const headers: Record<string, string> = {
-        // Only set default JSON header if it's NOT Form Data
         ...(isFormData ? {} : { "Content-Type": "application/json" }),
         ...options.headers,
       };
@@ -53,6 +52,14 @@ export const apiClient = {
         ...options,
         headers,
       });
+
+      if (response.status === 401) {
+        tokenManager.removeToken();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        return { success: false, error: "Session expired. Please login." };
+      }
 
       const data = await response.json();
 
@@ -84,13 +91,16 @@ export const apiClient = {
 
   post<T>(
     endpoint: string,
-    body?: Record<string, any> | URLSearchParams,
+    body?: Record<string, any> | URLSearchParams | FormData,
     options?: RequestOptions,
   ) {
     return this.request<T>(endpoint, {
       ...options,
       method: "POST",
-      body: body instanceof URLSearchParams ? body : JSON.stringify(body),
+      body:
+        body instanceof FormData || body instanceof URLSearchParams
+          ? body
+          : JSON.stringify(body),
     });
   },
 

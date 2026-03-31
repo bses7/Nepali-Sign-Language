@@ -23,3 +23,11 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(reusabl
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+def get_verified_teacher(current_user: User = Depends(get_current_user)):
+    if current_user.role != "teacher":
+        raise HTTPException(status_code=403, detail="Only teachers can access this.")
+    if not current_user.is_verified_teacher:
+        raise HTTPException(status_code=403, detail="Your teacher account is not yet verified by an admin.")
+    return current_user
+

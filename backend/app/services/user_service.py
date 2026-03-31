@@ -29,6 +29,7 @@ def get_dashboard_data(db: Session, user: User):
         "first_name": user.first_name,
         "last_name": user.last_name,
         "role": user.role,
+        "is_verified_teacher": user.is_verified_teacher,
         "phone_number": user.phone_number,
         "xp": stats.xp or 0,
         "level": stats.level or 1,

@@ -41,3 +41,5 @@ class User(Base):
         backref="owners"
     )
 
+    is_verified_teacher = Column(Boolean, default=False)
+
