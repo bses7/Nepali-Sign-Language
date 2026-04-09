@@ -19,6 +19,7 @@ import {
   ShoppingBag,
   LogOut,
   PlusCircle,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -31,6 +32,7 @@ export function AppSidebar() {
   const { logout, dashboard } = useAuthStore();
 
   const isTeacher = dashboard?.role === "teacher";
+  const isAdmin = dashboard?.role === "admin";
 
   const handleLogout = () => {
     logout();
@@ -44,11 +46,19 @@ export function AppSidebar() {
     { title: "Shop", url: "/shop", icon: ShoppingBag },
   ];
 
-  if (isTeacher) {
+  if (isTeacher || isAdmin) {
     menuItems.push({
       title: "Contribute",
       url: "/teacher/contribute",
       icon: PlusCircle,
+    });
+  }
+
+  if (isAdmin) {
+    menuItems.push({
+      title: "Verify Teachers",
+      url: "/admin/teachers",
+      icon: ShieldCheck,
     });
   }
 

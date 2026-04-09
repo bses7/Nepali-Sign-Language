@@ -45,6 +45,10 @@ export const API_CONFIG = {
     teachers: {
       submit_sign: "/api/v1/teacher/upload-sign",
     },
+    admin: {
+      getTeachersList: "/api/v1/admin/teachers",
+      verifyTeacher: (userId: number) => `/api/v1/admin/verify-teacher/${userId}`,
+    }
   },
 };
 

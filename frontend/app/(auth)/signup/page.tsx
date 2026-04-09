@@ -19,6 +19,8 @@ import {
   Presentation,
   Phone,
   User,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export default function SignupPage() {
@@ -36,6 +38,7 @@ export default function SignupPage() {
     role: "student",
   });
   const [localError, setLocalError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) router.push("/dashboard");
@@ -239,13 +242,20 @@ export default function SignupPage() {
                   />
                   <input
                     name="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Password"
                     value={formData.password}
                     onChange={handleChange}
                     className="game-input pl-12"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
                 <div className="relative">
                   <Lock
@@ -254,13 +264,20 @@ export default function SignupPage() {
                   />
                   <input
                     name="confirmPassword"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Confirm"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     className="game-input pl-12"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
             </div>

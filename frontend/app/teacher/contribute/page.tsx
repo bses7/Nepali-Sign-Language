@@ -24,6 +24,7 @@ import {
   MousePointer2,
   ShieldCheck,
   Mail,
+  ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -38,11 +39,24 @@ export default function TeacherContributePage() {
 
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  // Security: Only allow verified teachers
   useEffect(() => {
-    if (!isAuthenticated) router.push("/login");
-    if (dashboard && dashboard.role !== "teacher") router.push("/dashboard");
-  }, [dashboard, isAuthenticated, router]);
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+
+    if (dashboard) {
+      const isAuthorized =
+        dashboard.role === "teacher" || dashboard.role === "admin";
+
+      if (!isAuthorized) {
+        router.push("/dashboard");
+        return;
+      }
+    }
+
+    fetchDashboard();
+  }, [isAuthenticated, dashboard?.role, router]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -65,6 +79,9 @@ export default function TeacherContributePage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    const canUpload =
+      dashboard?.is_verified_teacher || dashboard?.role === "admin";
+
     const titleValue = (
       e.currentTarget.elements.namedItem("title") as HTMLInputElement
     ).value;
@@ -72,7 +89,7 @@ export default function TeacherContributePage() {
       e.currentTarget.elements.namedItem("description") as HTMLTextAreaElement
     ).value;
 
-    if (!dashboard?.is_verified_teacher) {
+    if (!canUpload) {
       toast.error("Restricted Access", {
         description: "Only verified teachers can upload new signs.",
         icon: <Lock size={20} className="text-destructive" />,
@@ -110,7 +127,11 @@ export default function TeacherContributePage() {
     }
   };
 
-  if (!dashboard || dashboard.role !== "teacher") return null;
+  if (
+    !dashboard ||
+    (dashboard.role !== "teacher" && dashboard.role !== "admin")
+  )
+    return null;
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background px-4 py-20 relative overflow-hidden">
@@ -130,6 +151,7 @@ export default function TeacherContributePage() {
         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/5 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-secondary/5 rounded-full blur-[120px]" />
       </div>
+
       <main className="max-w-6xl mx-auto space-y-8">
         <GameHeader
           title="SignLearn"

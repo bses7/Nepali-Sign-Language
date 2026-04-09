@@ -3,7 +3,6 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 
-# Define the same Enum for validation
 class UserRole(str, Enum):
     STUDENT = "student"
     TEACHER = "teacher"
@@ -97,3 +96,13 @@ class LeaderboardUser(BaseModel):
 
 class LeaderboardOut(BaseModel):
     top_users: list[LeaderboardUser]
+
+class TeacherAdminView(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    email: str
+    is_verified_teacher: bool
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)

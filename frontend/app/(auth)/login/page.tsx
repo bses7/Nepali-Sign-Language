@@ -8,7 +8,15 @@ import { useAuthStore } from "@/lib/store/auth";
 import { GameHeader } from "@/components/game-header";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
-import { Mail, Lock, Sparkles, Fingerprint, GraduationCap } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Sparkles,
+  Fingerprint,
+  GraduationCap,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +26,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [localError, setLocalError] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -111,7 +121,6 @@ export default function LoginPage() {
 
             {/* Password Input */}
             <div className="space-y-2">
-              {/* Inside your Password Input div on the Login Page */}
               <div className="flex justify-between items-center ml-2">
                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                   Password
@@ -129,14 +138,21 @@ export default function LoginPage() {
                   size={18}
                 />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="game-input pl-12"
+                  className="game-input pl-12 pr-12"
                   required
                   disabled={isLoading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 

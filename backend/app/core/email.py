@@ -25,3 +25,27 @@ async def send_reset_password_email(email_to: str, token: str):
 
     fm = FastMail(conf)
     await fm.send_message(message)
+
+async def send_teacher_verified_email(email_to: str, first_name: str):
+    message = MessageSchema(
+        subject="NSL - Teacher Account Verified!",
+        recipients=[email_to],
+        body=f"""
+        Namaste {first_name},
+
+        Congratulations! Your teacher account for the Nepali Sign Language Platform has been verified by our team.
+
+        You can now:
+        - Upload sign language tutorial videos.
+        - Contribute to our sign library.
+        - Earn special rewards for your contributions.
+
+        We are looking forward to collaborating with you to make NSL learning accessible to everyone.
+
+        Best regards,
+        The NSL Admin Team
+        """,
+        subtype=MessageType.plain
+    )
+    fm = FastMail(conf)
+    await fm.send_message(message)
