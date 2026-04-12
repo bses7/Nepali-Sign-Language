@@ -12,6 +12,8 @@ from src.data_preprocessing.gen_dataset import NSLDataset, nsl_collate_fn
 from src.models.motion_transformer import NSLTransformer
 from src.evaluation.logger import NSLLogger
 
+from torch.utils.tensorboard import SummaryWriter
+
 # --- Loss Function Enhancements ---
 
 def calculate_finger_direction_loss(pred, target):
@@ -129,6 +131,8 @@ def train_model(config):
     best_val_loss = float('inf')
     early_stop_counter = 0
 
+    writer = SummaryWriter(log_dir=f"experiments/logs/tensorboard_logs")
+
     for epoch in range(config['training']['epochs']):
         model.train()
         epoch_losses = {"pos": 0, "vel": 0, "bone": 0, "align": 0, "dir": 0}
@@ -175,7 +179,6 @@ def train_model(config):
             l_pos = (criterion(output, tgt_expected) * batch_weights).mean()
             l_vel_global = calculate_velocity_loss(output, tgt_expected)
             
-            # Transition-Specific Velocity (Prevents jitter during क to ग)
             l_vel_trans = 0.0
             if trans_mask.any():
                 l_vel_trans = calculate_velocity_loss(output[trans_mask], tgt_expected[trans_mask])
@@ -219,6 +222,14 @@ def train_model(config):
         logger.log_epoch(epoch + 1, epoch_losses["pos"]/num_batches, epoch_losses["vel"]/num_batches, 
                          epoch_losses["bone"]/num_batches, avg_val, optimizer.param_groups[0]['lr'])
         
+        writer.add_scalar('Loss/Validation', avg_val, epoch)
+        writer.add_scalar('Loss/Train_Position', epoch_losses["pos"]/num_batches, epoch)
+        writer.add_scalar('Loss/Train_Velocity', epoch_losses["vel"]/num_batches, epoch)
+        writer.add_scalar('Loss/Train_Bone', epoch_losses["bone"]/num_batches, epoch)
+        writer.add_scalar('Loss/Train_Direction', epoch_losses["dir"]/num_batches, epoch)
+        writer.add_scalar('Loss/Train_Alignment', epoch_losses["align"]/num_batches, epoch)
+        writer.add_scalar('Parameters/Learning_Rate', optimizer.param_groups[0]['lr'], epoch)
+        
         scheduler.step(avg_val)
         print(f"Epoch {epoch+1} | Val Loss: {avg_val:.5f} | Pos: {epoch_losses['pos']/num_batches:.4f} | Dir: {epoch_losses['dir']/num_batches:.4f}")
 
@@ -238,3 +249,5 @@ def train_model(config):
             if early_stop_counter >= config['training'].get('early_stopping_patience', 100):
                 print("🛑 Early Stopping!")
                 break
+
+        writer.close()

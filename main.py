@@ -12,7 +12,7 @@ def main():
     
     parser.add_argument("--stage", type=str, required=True, 
                         # Added 'rec_inference' to choices
-                        choices=["build", "prep", "train", "generate", "recognize_train", "rec_inference", "practice", "ref_gen"], 
+                        choices=["build", "prep", "train", "evaluate", "generate", "recognize_train", "rec_inference", "practice", "ref_gen"], 
                         help="prep: build vocab | build: process videos | recognize_train: train classifier")
     
     parser.add_argument("--data", type=str, required=False, choices=["vowel", "consonant"])
@@ -61,6 +61,18 @@ def main():
         print(f"🎬 Initializing Generation Training Phase...")
         if ensure_master_metadata():
             train_model(config)
+
+    elif args.stage == "evaluate":
+        print(f"📊 Running Scientific Evaluation for Paper (MJE, PCK, DTW)...")
+        if ensure_master_metadata():
+            from src.evaluation.evaluate_model import run_test_evaluation
+            
+            model_path = config['training']['model_save_path']
+            
+            if not Path(model_path).exists():
+                print(f"❌ Error: Model not found at {model_path}. Please train the model first.")
+            else:
+                run_test_evaluation(config, model_path)
 
     elif args.stage == "recognize_train":
         print(f"👁️ Initializing Recognition Training Phase (Testing on S3)...")
