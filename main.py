@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 import yaml
 import pandas as pd
 from pathlib import Path
@@ -11,17 +12,18 @@ def main():
     parser = argparse.ArgumentParser(description="NSL Fingerspelling Pipeline")
     
     parser.add_argument("--stage", type=str, required=True, 
-                        # Added 'rec_inference' to choices
-                        choices=["build", "prep", "train", "evaluate", "generate", "recognize_train", "rec_inference", "practice", "ref_gen"], 
+                        choices=["build", "prep", "train", "evaluate", "animate", "generate", "recognize_train", "rec_inference", "practice", "ref_gen"], 
                         help="prep: build vocab | build: process videos | recognize_train: train classifier")
     
     parser.add_argument("--data", type=str, required=False, choices=["vowel", "consonant"])
     parser.add_argument("--type", type=str, required=False, choices=["single", "multi"])
     parser.add_argument("--config", type=str, default="config/config.yaml")
 
+    parser.add_argument("--avatar", type=str, default="avatar", 
+                        help="Options: avatar, avatar1, avatar2, avatar3, avatar4")
+
     args = parser.parse_args()
 
-    # Pre-validation for build stage
     if args.stage in ["build"]:
         if not args.data or not args.type:
             parser.error(f"--stage {args.stage} requires both --data and --type")
@@ -29,7 +31,6 @@ def main():
     with open(args.config, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
 
-    # Helper: Ensure master metadata exists before any training
     def ensure_master_metadata():
         output_dir = Path(config['paths']['output_dir'])
         master_csv = output_dir / "master_metadata.csv"
@@ -118,6 +119,39 @@ def main():
         motion = generator.generate(user_input)
         out_file = Path("experiments/generated_output.npz")
         generator.save_to_npz(motion, out_file)
+
+    elif args.stage == "animate":
+        print(f"🚀 Initializing 3D Animation Pipeline for Avatar: {args.avatar}")
+        
+        from src.inference.gen_inference import NSLGenerator
+        generator = NSLGenerator(model_path=config['training']['model_save_path'], vocab_path="vocab.json")
+        user_input = input("Enter Nepali word for 3D Animation: ")
+        
+        motion = generator.generate(user_input)
+        npz_file = Path("experiments/generated_output.npz")
+        generator.save_to_npz(motion, npz_file)
+
+        avatar_filename = f"{args.avatar}.glb"
+        avatar_path = Path(config['paths']['avatars_dir']) / avatar_filename
+        
+        if not avatar_path.exists():
+            print(f"❌ Error: Avatar file {avatar_path} not found!")
+            return
+
+        print(f"🎨 Triggering Blender with {avatar_filename}...")
+        blender_exe = config['blender']['executable_path']
+        blender_script = config['blender']['script_path']
+        
+        try:
+            subprocess.run([
+                blender_exe,
+                "--background",
+                "--python", blender_script,
+                "--", str(avatar_path.absolute())
+            ], check=True)
+            print(f"✅ Exported successfully to experiments/nsl_animation.glb")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Blender Error: {e}")
 
 if __name__ == "__main__":
     main()

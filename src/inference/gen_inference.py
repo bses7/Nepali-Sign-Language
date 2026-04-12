@@ -6,18 +6,20 @@ from scipy.ndimage import gaussian_filter1d
 from src.models.motion_transformer import NSLTransformer
 from src.data_preprocessing.tokenizer import NSLTokenizer
 
+from src.data_preprocessing.text_processor import NepaliTextProcessor
+
+
 class NSLGenerator:
     def __init__(self, model_path, vocab_path, device=None):
         self.device = device if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        # 1. Load Tokenizer
         self.tokenizer = NSLTokenizer()
         self.tokenizer.load_vocab(vocab_path)
         
-        # 2. Load Checkpoint and Model
+        self.text_processor = NepaliTextProcessor()
+        
         checkpoint = torch.load(model_path, map_location=self.device)
         
-        # Checkpoint usually stores these, otherwise use defaults
         v_size = checkpoint.get('vocab_size', len(self.tokenizer.vocab))
         f_dim = checkpoint.get('feature_dim', 231) 
         
@@ -35,7 +37,6 @@ class NSLGenerator:
         if max_frames is None:
             max_frames = 40 if mode == "sign" else 15
 
-        # If no seed (start of word), start with a neutral zero frame
         if seed_frames is None:
             generated = torch.zeros((1, 1, self.feature_dim)).to(self.device)
         else:
@@ -45,11 +46,9 @@ class NSLGenerator:
 
         for _ in range(max_frames):
             with torch.no_grad():
-                # Use history context for the transformer decoder
                 input_seq = generated[:, -60:, :]
                 preds = self.model(tokens, input_seq)
                 
-                # Take the latest predicted frame
                 next_frame = preds[:, -1:, :]
                 
                 output_frames.append(next_frame)
@@ -58,49 +57,59 @@ class NSLGenerator:
         return torch.cat(output_frames, dim=1)
 
     def generate(self, user_input, smooth=True):
-        """
-        The main method called by main.py. 
-        Generates a full sequence of signs and transitions for a Nepali word.
-        """
-        chars = list(user_input)
+        clusters = self.text_processor.get_clusters(user_input)
         all_segments = []
         last_frame = None
 
-        for i, char in enumerate(chars):
-            # 1. Generate the Sign (Static character shape)
-            sign_frames = self._generate_segment(char, mode="sign", seed_frames=last_frame)
-            all_segments.append(sign_frames)
+        for cluster in clusters:
+            is_syllable = len(cluster) > 1
             
-            # Seed the next transition with the last frame of this sign
-            last_frame = sign_frames[:, -1:, :]
+            for j, char in enumerate(cluster):
+                duration = 35 if is_syllable else 45
+                sign_frames = self._generate_segment(char, mode="sign", seed_frames=last_frame, max_frames=duration)
+                all_segments.append(sign_frames)
+                last_frame = sign_frames[:, -1:, :]
 
-            # 2. Generate the Transition (Movement to the next character)
-            if i < len(chars) - 1:
-                next_char = chars[i+1]
-                # Pass both chars so the model knows Start and End context
-                trans_text = char + next_char 
+                if j < len(cluster) - 1:
+                    for alpha in np.linspace(1.0, 0.2, 5):
+                        relaxing_frame = last_frame.clone()
+                        relaxing_frame[:, :, 99:225] *= alpha
+                        all_segments.append(relaxing_frame)
+                        last_frame = relaxing_frame
+
+                    next_char = cluster[j+1]
+                    trans_frames = self._generate_segment(char + next_char, mode="trans", seed_frames=last_frame, max_frames=20)
+                    all_segments.append(trans_frames)
+                    last_frame = trans_frames[:, -1:, :]
+
+            for _ in range(10):
+                living_frame = last_frame.clone()
+                tremor = torch.randn_like(living_frame[:, :, 99:]) * 0.001
+                living_frame[:, :, 99:] += tremor
+                all_segments.append(living_frame)
+                last_frame = living_frame
+
+            current_index = clusters.index(cluster)
+            if current_index < len(clusters) - 1:
+                start_char = cluster[-1]
+                end_char = clusters[current_index + 1][0]
                 
-                trans_frames = self._generate_segment(trans_text, mode="trans", seed_frames=last_frame)
+                trans_frames = self._generate_segment(start_char + end_char, mode="trans", seed_frames=last_frame, max_frames=18)
                 all_segments.append(trans_frames)
-                
-                # Seed the next sign with the last frame of this transition
                 last_frame = trans_frames[:, -1:, :]
 
-        # Combine all tensors into one numpy array [Total_Frames, 231]
         full_motion = torch.cat(all_segments, dim=1).squeeze(0).cpu().numpy()
-
-        # Gaussian Smoothing: Blurs the joins between signs/transitions for fluid movement
+        
         if smooth:
-            full_motion = gaussian_filter1d(full_motion, sigma=1.2, axis=0)
+            full_motion = gaussian_filter1d(full_motion, sigma=1.5, axis=0)
 
         return full_motion
-
+    
     def save_to_npz(self, motion_data, output_path):
         """
         The method called by main.py to save the results.
         Splits the 231-dim vector back into Pose, Hands, and Meta.
         """
-        # Ensure the output directory exists
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
         pose = motion_data[:, :99].reshape(-1, 33, 3)

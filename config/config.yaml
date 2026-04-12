@@ -7,6 +7,7 @@ paths:
   cons_part3: "data/NSL_Consonant_Part_3"
   annotations: "data/annotations"
   vocab_path: "vocab.json"
+  avatars_dir: "data/Avatars"
 
 mediapipe:
   static_image_mode: false
@@ -92,3 +93,8 @@ rec_training:
   model_save_path: "experiments/recognition/best_recognizer.pth"
   early_stopping_patience: 100
   val_signer: "S3"
+
+blender:
+  executable_path: "C:/Program Files/Blender Foundation/Blender 4.5/blender.exe"
+  script_path: "src/blender/blender_animate.py"
+  output_glb: "experiments/nsl_animation.glb"
