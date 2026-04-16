@@ -20,6 +20,7 @@ import {
   LogOut,
   PlusCircle,
   ShieldCheck,
+  Languages,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -44,6 +45,7 @@ export function AppSidebar() {
     { title: "Lessons", url: "/lessons", icon: BookOpen },
     { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
     { title: "Shop", url: "/shop", icon: ShoppingBag },
+    { title: "Generate", url: "/generation", icon: Languages },
   ];
 
   if (isTeacher || isAdmin) {

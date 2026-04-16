@@ -47,8 +47,13 @@ export const API_CONFIG = {
     },
     admin: {
       getTeachersList: "/api/v1/admin/teachers",
-      verifyTeacher: (userId: number) => `/api/v1/admin/verify-teacher/${userId}`,
-    }
+      verifyTeacher: (userId: number) =>
+        `/api/v1/admin/verify-teacher/${userId}`,
+    },
+    generation: {
+      generateSign: "/api/v1/generation/generate-sign",
+      generateSkeleton: "/api/v1/generation/generate-skeleton",
+    },
   },
 };
 

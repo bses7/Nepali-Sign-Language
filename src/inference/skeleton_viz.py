@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 from tqdm import tqdm
 from pathlib import Path
+import os 
+import subprocess
 
 HAND_CONNECTIONS = [
     (0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 7), (7, 8),
@@ -10,27 +12,25 @@ HAND_CONNECTIONS = [
 ]
 
 def create_skeleton_video(npz_path, output_path, width=1200, height=1200, fps=30):
-    """
-    Reads an NPZ file and generates an MP4 video of the Right Hand 
-    using the auto-scaling logic.
-    """
-    print(f"Loading data from {npz_path}...")
+    temp_path = str(output_path).replace(".mp4", "_temp.mp4")
+    
     data = np.load(npz_path)
     rh = data['rh'] 
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(str(output_path), fourcc, fps, (width, height))
+    out = cv2.VideoWriter(temp_path, fourcc, fps, (width, height))
 
-    print("Drawing auto-scaled skeleton frames...")
-
-    for f in tqdm(range(len(rh))):
+    for f in range(len(rh)):
         img = np.zeros((height, width, 3), dtype=np.uint8)
         frame_pts = rh[f]
 
+        if f == 0:
+            print(f"Sample points: {frame_pts[0]}") 
+
+        # Your existing drawing logic
         min_p = frame_pts.min(axis=0)
         max_p = frame_pts.max(axis=0)
         diff = max_p - min_p
-        
         scale = (width * 0.4) / (max(diff[0], diff[1]) + 1e-6)
         center_offset = (max_p + min_p) / 2.0
 
@@ -53,4 +53,19 @@ def create_skeleton_video(npz_path, output_path, width=1200, height=1200, fps=30
         out.write(img)
 
     out.release()
-    print(f"Video successfully saved to: {output_path}")
+
+    # 2. Convert temp_path to browser-compatible H.264 using FFmpeg
+    try:
+        subprocess.run([
+            'ffmpeg', '-y', '-i', temp_path,
+            '-c:v', 'libx264',
+            '-pix_fmt', 'yuv420p',  
+            '-movflags', 'faststart',
+            str(output_path)
+        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        print(f"✅ Video converted for web: {output_path}")
+    except Exception as e:
+        print(f"❌ FFmpeg conversion failed: {e}")

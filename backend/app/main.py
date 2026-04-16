@@ -8,6 +8,8 @@ import os
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
+import mimetypes
+
 from app.api.v1.endpoints import generation
 
 
@@ -44,6 +46,9 @@ def read_root():
 
 if not os.path.exists("static"):
     os.makedirs("static")
+
+
+mimetypes.add_type('video/mp4', '.mp4')
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

@@ -98,6 +98,21 @@ export default function ProfilePage() {
           <div className="flex items-center gap-4">
             <CoinDisplay amount={dashboard.coins} />
             <ProfileDropdown userName={displayName} />
+            {dashboard?.is_verified_teacher && (
+              <div className="relative group cursor-help">
+                <div className="bg-blue-500 rounded-3xl duration-500">
+                  <BadgeCheck size={32} className="text-white " />
+                </div>
+
+                {/* Tooltip on Hover */}
+                <div className="absolute top-14 right-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                  <div className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border-b-4 border-black whitespace-nowrap">
+                    Verified Instructor
+                  </div>
+                  <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[5px] border-b-slate-900 mx-auto -mt-[22px] rotate-180 mb-4 ml-4" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </nav>
@@ -299,7 +314,7 @@ function SocialLinkItem({ icon, label, isLinked, onLink }: any) {
           onClick={onLink}
           className="bg-white hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl border-b-4 border-slate-200 hover:border-green-800 transition-all font-black text-[10px] uppercase active:translate-y-1 active:border-b-0"
         >
-          Sync Node
+          Sync Now
         </button>
       )}
     </div>
