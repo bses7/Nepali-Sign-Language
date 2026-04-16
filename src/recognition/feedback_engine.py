@@ -11,7 +11,7 @@ class NSLFeedbackEngine:
             "Ring": [0, 13, 14, 16],
             "Pinky": [0, 17, 18, 20]
         }
-        self.TOLERANCE = 18.0      # Increased slightly for better user experience
+        self.TOLERANCE = 18.0    
         self.SLIGHT_LIMIT = 35.0  
         self.MAJOR_LIMIT = 60.0   
 
@@ -81,7 +81,6 @@ class NSLFeedbackEngine:
             intensity = self._get_intensity(mag)
 
             if intensity:
-                # LOGIC IMPROVEMENT:
                 # If reference is CURLED but user is STRAIGHT
                 if r_is_curled and not u_is_curled:
                     action = f"Curl your {finger} finger"
@@ -111,7 +110,6 @@ class NSLFeedbackEngine:
             report["feedback"].append(f"Rotate your wrist {intensity}.")
             total_error_deg += (wrist_error - self.TOLERANCE)
 
-        # Scoring
         base_score = 100.0
         deduction = total_error_deg * 0.4 # Slightly reduced penalty
         final_score = max(0, base_score - deduction)

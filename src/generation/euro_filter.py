@@ -4,8 +4,8 @@ import numpy as np
 class OneEuroFilter:
     def __init__(self, t0, x0, min_cutoff=1.0, beta=0.0, d_cutoff=1.0):
         """
-        min_cutoff: Lower values = less jitter when slow. (Try 0.1 to 1.0)
-        beta: Higher values = less lag when moving fast. (Try 0.01 to 0.1)
+        min_cutoff: Lower values = less jitter when slow. 
+        beta: Higher values = less lag when moving fast. 
         """
         self.min_cutoff = float(min_cutoff)
         self.beta = float(beta)
@@ -32,7 +32,6 @@ class OneEuroFilter:
         # Filter the signal
         x_hat = alpha * x + (1 - alpha) * self.x_prev
 
-        # Update state
         self.x_prev = x_hat
         self.dx_prev = edx
         self.t_prev = t

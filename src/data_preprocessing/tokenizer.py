@@ -47,18 +47,15 @@ class NSLTokenizer:
         if mode == "sign":
             # Structure: [SOS, <SIGN>, character, EOS]
             token_ids.append(self.char2idx[self.sign_mode])
-            # Ensure we only take the first char if a string is passed
             char = text[0] if len(text) > 0 else self.unk_token
             token_ids.append(self.char2idx.get(char, self.char2idx[self.unk_token]))
         
         else:
             # Structure: [SOS, char_from, <TRANS>, char_to, EOS]
-            # We expect text to be a string like "कख"
             if len(text) >= 2:
                 char_from = text[0]
                 char_to = text[1]
             elif len(text) == 1:
-                # Fallback if metadata only has the target char
                 char_from = self.unk_token
                 char_to = text[0]
             else:
@@ -87,4 +84,4 @@ class NSLTokenizer:
             self.char2idx = data['char2idx']
             self.idx2char = {int(k): v for k, v in data['idx2char'].items()}
             self.vocab = data.get('vocab', list(self.char2idx.keys()))
-        print(f"📖 Vocabulary loaded. Total tokens: {len(self.vocab)}")
+        print(f"Vocabulary loaded. Total tokens: {len(self.vocab)}")

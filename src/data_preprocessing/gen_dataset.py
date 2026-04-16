@@ -18,7 +18,7 @@ class NSLDataset(Dataset):
         self.max_seq_len = max_seq_len
         self.augment = augment
         
-        print(f"📊 Dataset initialized. Features: 231 dimensions (99 Pose, 126 Hands, 6 Meta).")
+        print(f"Dataset initialized. Features: 231 dimensions (99 Pose, 126 Hands, 6 Meta).")
 
     def __len__(self):
         return len(self.df)
@@ -54,8 +54,6 @@ class NSLDataset(Dataset):
         lh = data['lh'].reshape(data['lh'].shape[0], -1)
         rh = data['rh'].reshape(data['rh'].shape[0], -1)
 
-        # 2. NEW: Load Meta Data (Wrist Global Positions - 3 each)
-        # We take only the first 3 values (X, Y, Z) from the 4 values (X, Y, Z, Scale)
         lh_meta = data['lh_meta'][:, :3] 
         rh_meta = data['rh_meta'][:, :3]
 
@@ -63,7 +61,6 @@ class NSLDataset(Dataset):
         lh = lh * 5.0
         rh = rh * 5.0
         pose = pose / 0.5 
-        # Meta coordinates (Global Wrist) are already normalized relative to shoulders in utils.py
         
         if not is_cropped:
             mid_x = (pose[:, 11*3] + pose[:, 12*3]) / 2
@@ -72,17 +69,12 @@ class NSLDataset(Dataset):
                 pose[:, c] -= mid_x
                 pose[:, c+1] -= mid_y
 
-        # Concatenate: 99 + 63 + 63 + 3 + 3 = 231
         features = np.concatenate([pose, lh, rh, lh_meta, rh_meta], axis=1)
         features = torch.tensor(features, dtype=torch.float32)
 
-        # 3. Handle Tokenization Text
         mode = "sign" if row['type'] == 'sign' else "trans"
         
         if mode == "trans":
-            # Check if metadata has a column for the starting character
-            # If your CSV 'char' column for transitions is like 'कख', this works.
-            # If it only says 'ख', you might need to find the previous row.
             char_text = str(row['char']) 
             if len(char_text) < 2 and idx > 0:
                 prev_row = self.df.iloc[idx-1]
@@ -104,7 +96,7 @@ class NSLDataset(Dataset):
             if torch.rand(1) > 0.5:
                 features[:, 162:225] = self.rotate_point_cloud(features[:, 162:225])  
             
-            # Ensure local wrist remains 0,0,0
+            # local wrist remains 0,0,0
             features[:, 99:102] = 0.0 
             features[:, 162:165] = 0.0
         

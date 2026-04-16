@@ -8,12 +8,10 @@ import os
 # ============================================
 # PARSE ARGUMENTS PASSED FROM MAIN.PY
 # ============================================
-# sys.argv contains: [blender, --python, script.py, --, avatar_path]
 argv = sys.argv
 if "--" in argv:
     AVATAR_PATH = argv[argv.index("--") + 1]
 else:
-    # Fallback if run manually in Blender
     AVATAR_PATH = "C:/projects/FYP/data/Avatars/avatar.glb"
 
 # ============================================
@@ -176,27 +174,23 @@ def smooth_all_bone_tracks(armature, window=5):
     
     action = armature.animation_data.action
     
-    # Group fcurves by bone and component (w, x, y, z)
     bone_curves = {}
     for fc in action.fcurves:
-        # fcurve path looks like: pose.bones["BoneName"].rotation_quaternion
         if 'rotation_quaternion' not in fc.data_path:
             continue
         bone_name = fc.data_path.split('"')[1]
         if bone_name not in bone_curves:
             bone_curves[bone_name] = {}
-        bone_curves[bone_name][fc.array_index] = fc  # 0=w, 1=x, 2=y, 3=z
+        bone_curves[bone_name][fc.array_index] = fc  
 
     for bone_name, curves in bone_curves.items():
         if len(curves) != 4:
             continue
         
-        # Collect all keyframe times (should be same across w/x/y/z)
         times = sorted([kp.co[0] for kp in curves[0].keyframe_points])
         if len(times) < 3:
             continue
         
-        # Read quaternons per frame
         raw_quats = []
         for t in times:
             q = mathutils.Quaternion((

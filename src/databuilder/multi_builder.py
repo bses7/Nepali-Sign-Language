@@ -13,7 +13,6 @@ class MultiBuilder(BaseBuilder):
         anno_root = Path("data/annotations")
         base_out_dir = Path(self.config['paths']['sequences_dir']) / f"NSL_{category.capitalize()}_Multi"
 
-        # Folders to search for videos
         data_sources = [Path(self.config['paths']['raw_data']) / f"NSL_{category.capitalize()}"]
         if category == "consonant":
             data_sources = [
@@ -35,7 +34,7 @@ class MultiBuilder(BaseBuilder):
 
             for csv_path in tqdm(
                 csv_files,
-                desc=f"📄 {anno_folder.name}",
+                desc=f"{anno_folder.name}",
                 unit="csv",
                 leave=False
             ):

@@ -32,7 +32,6 @@ class NSLTransformer(nn.Module):
             nn.Dropout(dropout)
         )
 
-        # Maps 231 features into the transformer's d_model space
         self.motion_projection = nn.Sequential(
             nn.Linear(feature_dim, d_model),
             nn.LayerNorm(d_model),
@@ -54,7 +53,6 @@ class NSLTransformer(nn.Module):
             activation='gelu'
         )
         
-        # Maps transformer output back to 231 features
         self.output_layer = nn.Sequential(
             nn.Linear(d_model, d_model),
             nn.ReLU(),

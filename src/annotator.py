@@ -53,7 +53,7 @@ class NSLAnnotator:
 
     def run_ui(self, video_path):
         # --- NEW: Manual Crop Selection ---
-        print(f"\n🎥 Video: {video_path.name}")
+        print(f"\nVideo: {video_path.name}")
         crop_input = input("Is this video CROPPED (only hand visible)? (y/n): ").lower()
         is_cropped = True if crop_input == 'y' else False
         
@@ -110,13 +110,13 @@ class NSLAnnotator:
                         break
             elif key == ord('w'): 
                 temp_start = None
-                print("🗑️ Start point cleared")
+                print("Start point cleared")
             elif key == ord('d'): cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx + 1)
             elif key == ord('f'): cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx + 15)
             elif key == ord('a'): cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, frame_idx - 1))
             elif key == ord('r'): cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, frame_idx - 15))
             elif key == ord('q'): 
-                print("👋 Video closed by user.")
+                print("Video closed by user.")
                 break
 
         cap.release()
@@ -131,7 +131,7 @@ class NSLAnnotator:
         save_path = save_dir / f"{video_path.stem}.csv"
         df = pd.DataFrame(data)
         df.to_csv(save_path, index=False)
-        print(f"💾 Saved to: {save_path}")
+        print(f"Saved to: {save_path}")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -141,12 +141,12 @@ def main():
     annotator = NSLAnnotator(args.mode)
     videos = annotator.find_videos()
     
-    print(f"🔍 Found {len(videos)} videos for {args.mode}")
+    print(f"Found {len(videos)} videos for {args.mode}")
     
     for vid in videos:
         check_path = annotator.anno_base_path / vid.parent.name / f"{vid.stem}.csv"
         if check_path.exists():
-            print(f"⏩ Skipping {vid.name} (Already annotated)")
+            print(f"Skipping {vid.name} (Already annotated)")
             continue
             
         print("-" * 50)

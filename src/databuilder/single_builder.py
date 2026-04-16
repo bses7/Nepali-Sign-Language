@@ -41,7 +41,7 @@ class SingleBuilder(BaseBuilder):
 
                 for vid_path in tqdm(
                     videos,
-                    desc=f"🎬 {folder.name}",
+                    desc=f"{folder.name}",
                     unit="video",
                     leave=False
                 ):

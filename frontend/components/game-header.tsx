@@ -22,7 +22,7 @@ export const GameHeader = React.forwardRef<HTMLDivElement, GameHeaderProps>(
     return (
       <div
         ref={ref}
-        className={cn("text-center mb-16 space-y-6", className)}
+        className={cn("text-center mb-12 space-y-6", className)}
         {...props}
       >
         <Link href="/" className="inline-block group">

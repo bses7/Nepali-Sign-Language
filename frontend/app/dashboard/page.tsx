@@ -38,12 +38,7 @@ import { GameShopIcon } from "@/components/icons/game-shop-icon";
 import { usersService } from "@/lib/api/users";
 import { toast } from "sonner";
 
-interface Lesson {
-  name: string;
-  difficulty: "Beginner" | "Intermediate" | "Advanced";
-  progress: number;
-  locked?: boolean;
-}
+import { SpellbookFAB } from "@/components/spell-fab";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -628,7 +623,6 @@ export default function Dashboard() {
                     />
                   )}
 
-                  {/* RANK 2 SLOT */}
                   {rank2 && (
                     <RankItem
                       rank={2}
@@ -638,7 +632,6 @@ export default function Dashboard() {
                     />
                   )}
 
-                  {/* SHOW "YOU" ONLY IF YOU ARE RANK 3 OR LOWER */}
                   {myRankNum > 2 && (
                     <>
                       <div className="flex justify-center gap-1 opacity-20 py-1">
@@ -673,6 +666,8 @@ export default function Dashboard() {
           </div>
         </section>
       </main>
+
+      <SpellbookFAB />
     </div>
   );
 }

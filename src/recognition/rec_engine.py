@@ -99,4 +99,4 @@ def train_recognition(config):
             print(f"🛑 Early stopping triggered at epoch {epoch+1}")
             break
 
-    print(f"✅ Training complete. Best Accuracy: {best_acc:.2%}")
+    print(f"Training complete. Best Accuracy: {best_acc:.2%}")

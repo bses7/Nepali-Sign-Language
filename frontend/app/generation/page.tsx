@@ -256,14 +256,18 @@ export default function GenerationPage() {
 
       {skeletonVideoUrl && resultUrl && (
         <div className="hidden md:block absolute top-32 right-10 z-[60] w-72 aspect-video bg-black rounded-3xl border-4 border-blue-500 shadow-2xl overflow-hidden animate-pop-spin">
-          {/* ... rest of the video code ... */}
+          <div className="absolute top-2 left-4 z-10">
+            <span className="text-[10px] font-black text-blue-400 uppercase tracking-tighter bg-black/60 px-2 py-0.5 rounded-full border border-blue-500/30">
+              Skeleton Sync
+            </span>
+          </div>
           <video
             src={skeletonVideoUrl}
             autoPlay
             loop
             muted
             playsInline
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain scale-150"
           />
         </div>
       )}

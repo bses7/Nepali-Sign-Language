@@ -27,7 +27,6 @@ def create_skeleton_video(npz_path, output_path, width=1200, height=1200, fps=30
         if f == 0:
             print(f"Sample points: {frame_pts[0]}") 
 
-        # Your existing drawing logic
         min_p = frame_pts.min(axis=0)
         max_p = frame_pts.max(axis=0)
         diff = max_p - min_p
@@ -54,7 +53,6 @@ def create_skeleton_video(npz_path, output_path, width=1200, height=1200, fps=30
 
     out.release()
 
-    # 2. Convert temp_path to browser-compatible H.264 using FFmpeg
     try:
         subprocess.run([
             'ffmpeg', '-y', '-i', temp_path,
@@ -66,6 +64,6 @@ def create_skeleton_video(npz_path, output_path, width=1200, height=1200, fps=30
         
         if os.path.exists(temp_path):
             os.remove(temp_path)
-        print(f"✅ Video converted for web: {output_path}")
+        print(f"Video converted for web: {output_path}")
     except Exception as e:
-        print(f"❌ FFmpeg conversion failed: {e}")
+        print(f"FFmpeg conversion failed: {e}")

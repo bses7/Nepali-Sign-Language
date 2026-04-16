@@ -145,7 +145,7 @@ def run_practice_session(target_char, model_path, vocab_path, duration=60):
     while True:
         elapsed = time.time() - session_start
         if elapsed > duration: 
-            print("⏰ Time's up!")
+            print("Time's up!")
             break
         
         ret, frame = cap.read()
@@ -221,7 +221,7 @@ def run_practice_session(target_char, model_path, vocab_path, duration=60):
             print(f" • {msg}")
         print("="*30 + "\n")
     else:
-        print("\n❌ No stable sign was detected. Try again!")
+        print("\n No stable sign was detected. Try again!")
 
 if __name__ == "__main__":
     run_realtime()

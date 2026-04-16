@@ -14,7 +14,7 @@ from src.evaluation.logger import NSLLogger
 
 from torch.utils.tensorboard import SummaryWriter
 
-# --- Loss Function Enhancements ---
+# --- Loss Functions ---
 
 def calculate_finger_direction_loss(pred, target):
     """

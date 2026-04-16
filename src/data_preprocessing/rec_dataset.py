@@ -25,13 +25,11 @@ class NSLRecDataset(Dataset):
         return len(self.df)
 
     def standardize_features(self, data, flip_lr=False):
-        # Extract components
         pose = data['pose'][:, :, :3].copy() # (F, 33, 3)
         lh = data['lh'].copy() # (F, 21, 3)
         rh = data['rh'].copy() # (F, 21, 3)
 
         # HAND AGNOSTIC AUGMENTATION
-        # If flip_lr is True, we swap Left and Right hands and flip X coordinates
         if flip_lr:
             # Flip X-axis (index 0 in the last dimension)
             pose[:, :, 0] *= -1
@@ -60,7 +58,6 @@ class NSLRecDataset(Dataset):
         npz_path = Path("training_dataset") / row['relative_path']
         data = np.load(npz_path)
         
-        # Randomly flip during training to handle both hands
         do_flip = False
         if self.augment and np.random.random() > 0.5:
             do_flip = True

@@ -67,7 +67,7 @@ function ShopContent() {
       badge: "Hall of Fame",
       main: "Your",
       sub: "Collection",
-      desc: "View your legendary achievements and certificates of mastery.",
+      desc: "Your legendary achievements and certificates of mastery.",
     },
     rewards: {
       badge: "The Vault",

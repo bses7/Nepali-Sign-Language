@@ -82,7 +82,7 @@ def run_test_evaluation(config_path, model_path):
     df_results = pd.DataFrame(results)
     summary = df_results.groupby('type').mean(numeric_only=True)
     
-    print("\n📊 --- TEST EVALUATION SUMMARY ---")
+    print("\n--- TEST EVALUATION SUMMARY ---")
     print(summary[['mje_hands', 'mje_pose', 'PCK@0.02', 'PCK@0.05', 'BLV_%', 'Jerk_Score', 'VelError']])
     
     output_dir = Path("experiments/logs")

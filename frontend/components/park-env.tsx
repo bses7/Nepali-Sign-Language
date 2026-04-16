@@ -31,8 +31,10 @@ function WorldProp({
         child.castShadow = true;
         child.receiveShadow = true;
         if (child.material) {
-          child.material.roughness = 0.7;
-          child.material.envMapIntensity = 0.8;
+          // 🔽 SOFTER MATERIAL (less shiny)
+          child.material.roughness = 1;
+          child.material.metalness = 0;
+          child.material.envMapIntensity = 0.3;
         }
       }
     });
@@ -57,13 +59,31 @@ function WorldProp({
 export function ParkEnv() {
   return (
     <group>
-      {/* 1. ATMOSPHERE & FOG */}
-      {/* Fog color matches the sky horizon to make the world look infinite */}
-      <fog attach="fog" args={["#bae6fd", 20, 90]} />
-      <Sky sunPosition={[100, 20, 100]} inclination={0.2} azimuth={0.25} />
+      {/* 1. LIGHTING (NEW - SOFT & BALANCED) */}
+      <ambientLight intensity={0.4} />
+
+      <directionalLight
+        position={[20, 30, 10]}
+        intensity={0.6}
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+      />
+
+      <hemisphereLight args={["#dbeafe", "#4d7c0f", 0.4]} />
+
+      {/* 2. ATMOSPHERE & FOG */}
+      <fog attach="fog" args={["#bae6fd", 15, 70]} />
+
+      <Sky
+        sunPosition={[50, 10, 50]} // 🔽 lower sun = softer light
+        inclination={0.3}
+        azimuth={0.25}
+      />
+
       <Sparkles count={100} scale={20} size={1.5} speed={0.4} opacity={0.2} />
 
-      {/* 2. CLOUDS */}
+      {/* 3. CLOUDS */}
       <Clouds material={THREE.MeshBasicMaterial}>
         <Cloud
           seed={10}
@@ -85,13 +105,13 @@ export function ParkEnv() {
         />
       </Clouds>
 
-      {/* 3. THE GROUND */}
+      {/* 4. GROUND */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
         <planeGeometry args={[300, 300]} />
         <meshStandardMaterial color="#5d8a33" roughness={1} />
       </mesh>
 
-      {/* 4. THE PATHWAY */}
+      {/* 5. PATHWAY */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, -1.98, 0]}
@@ -101,7 +121,7 @@ export function ParkEnv() {
         <meshStandardMaterial color="#e3d5a2" roughness={1} />
       </mesh>
 
-      {/* 5. PROPS (Positions maintained exactly) */}
+      {/* 6. PROPS */}
       <WorldProp
         path="/world/Fountain.glb"
         position={[0, -2, -15]}
@@ -123,13 +143,12 @@ export function ParkEnv() {
         randomRotate={false}
       />
 
-      {/* 6. TREES (Originals + Forest Backdrop) */}
+      {/* 7. TREES */}
       <WorldProp path="/world/Tree3.glb" position={[-22, -2, -15]} scale={3} />
       <WorldProp path="/world/Tree3.glb" position={[25, -2, -28]} scale={3} />
       <WorldProp path="/world/Tree3.glb" position={[-28, -2, -40]} scale={4} />
       <WorldProp path="/world/Tree3.glb" position={[-35, -2, -92]} scale={4} />
       <WorldProp path="/world/Tree3.glb" position={[42, -2, -92]} scale={4} />
-
       <WorldProp
         path="/world/Tree3.glb"
         position={[-10, -2, -55]}
@@ -145,15 +164,14 @@ export function ParkEnv() {
       <WorldProp path="/world/Tree3.glb" position={[45, -2, -50]} scale={5} />
       <WorldProp path="/world/Tree3.glb" position={[20, -2, -55]} scale={4} />
 
-      {/* 7. BUSHES (Original + New Variety) */}
+      {/* 8. BUSHES */}
       <WorldProp path="/world/Bush.glb" position={[-12, -2, -8]} scale={2.5} />
       <WorldProp path="/world/Bush.glb" position={[10, -2, 2]} scale={2} />
       <WorldProp path="/world/Bush.glb" position={[-4, -2, -12]} scale={1.2} />
       <WorldProp path="/world/Bush1.glb" position={[14, -2, -4]} scale={2.2} />
 
-      {/* 8. HEAVY GRASS COVERAGE */}
+      {/* 9. BASE GRASS */}
       {[
-        // Original positions (UNCHANGED)
         [-5, 5],
         [6, -6],
         [-8, -10],
@@ -202,9 +220,9 @@ export function ParkEnv() {
         />
       ))}
 
-      {/* NEW: Extra dense random grass layer */}
+      {/* 10. EXTRA DENSE GRASS */}
       {Array.from({ length: 120 }).map((_, i) => {
-        const x = (Math.random() - 0.5) * 100; // spread across ground
+        const x = (Math.random() - 0.5) * 100;
         const z = (Math.random() - 0.5) * 100;
 
         return (
@@ -220,6 +238,7 @@ export function ParkEnv() {
   );
 }
 
+/* PRELOAD */
 useGLTF.preload("/world/Tree3.glb");
 useGLTF.preload("/world/Bush.glb");
 useGLTF.preload("/world/Bush1.glb");
