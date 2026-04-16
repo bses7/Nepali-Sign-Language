@@ -8,7 +8,6 @@ from src.data_preprocessing.tokenizer import NSLTokenizer
 
 from src.data_preprocessing.text_processor import NepaliTextProcessor
 
-
 class NSLGenerator:
     def __init__(self, model_path, vocab_path, device=None):
         self.device = device if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -28,7 +27,7 @@ class NSLGenerator:
         self.model.eval()
         
         self.feature_dim = f_dim
-        print(f"✅ NSL Generator Initialized. Vocab: {v_size}, Features: {f_dim}")
+        print(f"NSL Generator Initialized. Vocab: {v_size}, Features: {f_dim}")
 
     def _generate_segment(self, text, mode="sign", seed_frames=None, max_frames=None):
         """Internal helper to generate a block of motion."""
@@ -40,7 +39,7 @@ class NSLGenerator:
         if seed_frames is None:
             generated = torch.zeros((1, 1, self.feature_dim)).to(self.device)
         else:
-            generated = seed_frames # Shape [1, 1, feature_dim]
+            generated = seed_frames 
 
         output_frames = []
 
@@ -126,4 +125,4 @@ class NSLGenerator:
             lh_meta=lh_meta, 
             rh_meta=rh_meta
         )
-        print(f"💾 Generated NPZ saved to: {output_path}")
+        print(f"Generated NPZ saved to: {output_path}")

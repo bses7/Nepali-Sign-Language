@@ -19,8 +19,8 @@ else:
 # ============================================
 # CONFIGURATION
 # ============================================
-NPZ_PATH = "C:/projects/FYP/experiments/generated_output.npz" 
-OUTPUT_GLB = "C:/projects/FYP/experiments/nsl_animation.glb"
+NPZ_PATH = os.getenv("NPZ_PATH", "C:/projects/FYP/experiments/generated_output.npz")
+OUTPUT_GLB = os.getenv("OUTPUT_GLB", "C:/projects/FYP/experiments/nsl_animation.glb")
 FRAME_START = 1
 HAND_DATA_SCALE = 5.0 
 

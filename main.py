@@ -6,13 +6,14 @@ from pathlib import Path
 from src.databuilder.single_builder import SingleBuilder
 from src.databuilder.multi_builder import MultiBuilder
 from src.data_preprocessing.tokenizer import NSLTokenizer
+from src.inference.skeleton_viz import create_skeleton_video
 from src.generation.gen_engine import train_model
 
 def main():
     parser = argparse.ArgumentParser(description="NSL Fingerspelling Pipeline")
     
     parser.add_argument("--stage", type=str, required=True, 
-                        choices=["build", "prep", "train", "evaluate", "animate", "generate", "recognize_train", "rec_inference", "practice", "ref_gen"], 
+                        choices=["build", "prep", "train", "evaluate", "animate", "skeleton", "generate", "recognize_train", "rec_inference", "practice", "ref_gen"], 
                         help="prep: build vocab | build: process videos | recognize_train: train classifier")
     
     parser.add_argument("--data", type=str, required=False, choices=["vowel", "consonant"])
@@ -35,10 +36,10 @@ def main():
         output_dir = Path(config['paths']['output_dir'])
         master_csv = output_dir / "master_metadata.csv"
         if not master_csv.exists():
-            print("📦 Master metadata not found. Consolidating all CSVs...")
+            print("Master metadata not found. Consolidating all CSVs...")
             csv_files = list(output_dir.glob("*_metadata.csv"))
             if not csv_files:
-                print("❌ Error: No metadata CSVs found.")
+                print("Error: No metadata CSVs found.")
                 return None
             df = pd.concat([pd.read_csv(f) for f in csv_files], ignore_index=True)
             df.to_csv(master_csv, index=False, encoding='utf-8-sig')
@@ -46,7 +47,7 @@ def main():
         return master_csv
 
     if args.stage == "prep":
-        print("🛠️ Stage: PREP (Building Vocabulary)")
+        print("Stage: PREP (Building Vocabulary)")
         tokenizer = NSLTokenizer(config)
         tokenizer.save_vocab("vocab.json")
 
@@ -59,49 +60,48 @@ def main():
             print(f"Build complete. Metadata saved to {csv_path}")
     
     elif args.stage == "train":
-        print(f"🎬 Initializing Generation Training Phase...")
+        print(f"Initializing Generation Training Phase...")
         if ensure_master_metadata():
             train_model(config)
 
     elif args.stage == "evaluate":
-        print(f"📊 Running Scientific Evaluation for Paper (MJE, PCK, DTW)...")
+        print(f"Running Scientific Evaluation for Paper (MJE, PCK, DTW)...")
         if ensure_master_metadata():
             from src.evaluation.evaluate_model import run_test_evaluation
             
             model_path = config['training']['model_save_path']
             
             if not Path(model_path).exists():
-                print(f"❌ Error: Model not found at {model_path}. Please train the model first.")
+                print(f"Error: Model not found at {model_path}. Please train the model first.")
             else:
                 run_test_evaluation(config, model_path)
 
     elif args.stage == "recognize_train":
-        print(f"👁️ Initializing Recognition Training Phase (Testing on S3)...")
+        print(f"Initializing Recognition Training Phase (Testing on S3)...")
         if ensure_master_metadata():
             from src.recognition.rec_engine import train_recognition
             train_recognition(config)
 
     elif args.stage == "rec_inference":
-        print(f"👁️ Initializing Real-time Recognition Inference...")
+        print(f"Initializing Real-time Recognition Inference...")
         from src.inference.rec_inference import run_realtime
         
-        # Pull paths from your config.yaml
         model_path = config['rec_training']['model_save_path']
         vocab_path = "vocab.json"
         
         if not Path(model_path).exists():
-            print(f"❌ Error: Model not found at {model_path}. Train the model first using --stage recognize_train")
+            print(f"Error: Model not found at {model_path}. Train the model first using --stage recognize_train")
         else:
             run_realtime(model_path=model_path, vocab_path=vocab_path)
 
     elif args.stage == "ref_gen":
-        print("🔧 Stage: Generating Reference Library for Feedback...")
+        print("Stage: Generating Reference Library for Feedback...")
         from src.recognition.reference_generator import generate_reference_library
         generate_reference_library(config)
 
     elif args.stage == "practice":
         target_char = input("Enter the Nepali character you want to practice: ")
-        print(f"🎯 Practice Mode: Show the sign for '{target_char}'")
+        print(f"Practice Mode: Show the sign for '{target_char}'")
         
         from src.inference.rec_inference import run_practice_session
         run_practice_session(
@@ -112,7 +112,7 @@ def main():
         )
             
     elif args.stage == "generate":
-        print(f"✍️ Generating NSL for input...")
+        print(f"Generating NSL for input...")
         from src.inference.gen_inference import NSLGenerator
         generator = NSLGenerator(model_path=config['training']['model_save_path'], vocab_path="vocab.json")
         user_input = input("Enter Nepali word to fingerspell: ")
@@ -121,11 +121,11 @@ def main():
         generator.save_to_npz(motion, out_file)
 
     elif args.stage == "animate":
-        print(f"🚀 Initializing 3D Animation Pipeline for Avatar: {args.avatar}")
+        print(f"Initializing 3D Animation Pipeline for Avatar: {args.avatar}")
         
         from src.inference.gen_inference import NSLGenerator
         generator = NSLGenerator(model_path=config['training']['model_save_path'], vocab_path="vocab.json")
-        user_input = input("Enter Nepali word for 3D Animation: ")
+        user_input = input("Enter Nepali word (Romanized or Devanagari): ")
         
         motion = generator.generate(user_input)
         npz_file = Path("experiments/generated_output.npz")
@@ -135,10 +135,10 @@ def main():
         avatar_path = Path(config['paths']['avatars_dir']) / avatar_filename
         
         if not avatar_path.exists():
-            print(f"❌ Error: Avatar file {avatar_path} not found!")
+            print(f"Error: Avatar file {avatar_path} not found!")
             return
 
-        print(f"🎨 Triggering Blender with {avatar_filename}...")
+        print(f"Triggering Blender with {avatar_filename}...")
         blender_exe = config['blender']['executable_path']
         blender_script = config['blender']['script_path']
         
@@ -149,9 +149,23 @@ def main():
                 "--python", blender_script,
                 "--", str(avatar_path.absolute())
             ], check=True)
-            print(f"✅ Exported successfully to experiments/nsl_animation.glb")
+            print(f"Exported successfully to experiments/nsl_animation.glb")
         except subprocess.CalledProcessError as e:
-            print(f"❌ Blender Error: {e}")
+            print(f"Blender Error: {e}")
+
+    elif args.stage == "skeleton":
+        print(f"Stage: SKELETON (Generating Video Visualization)")
+        
+        from src.inference.gen_inference import NSLGenerator
+        generator = NSLGenerator(model_path=config['training']['model_save_path'], vocab_path="vocab.json")
+        user_input = input("Enter Nepali word to visualize: ")
+        
+        motion = generator.generate(user_input)
+        npz_file = Path("experiments/generated_output.npz")
+        generator.save_to_npz(motion, npz_file)
+
+        output_video = Path("experiments/skeleton.mp4")
+        create_skeleton_video(npz_file, output_video)
 
 if __name__ == "__main__":
     main()

@@ -48,6 +48,22 @@ class Settings(BaseSettings):
     @property
     def VOCAB_PATH(self) -> str:
         return str(PROJECT_ROOT / self.ml_config['paths']['vocab_path'])
+    
+    @property
+    def BLENDER_EXE(self) -> str:
+        return self.ml_config['blender']['executable_path']
+
+    @property
+    def BLENDER_SCRIPT(self) -> str:
+        return str(PROJECT_ROOT / self.ml_config['blender']['script_path'])
+    
+    @property
+    def GENERATOR_MODEL_PATH(self) -> str:
+        return str(PROJECT_ROOT / self.ml_config['training']['model_save_path'])
+    
+    @property
+    def AVATARS_BASE_DIR(self) -> Path:
+        return PROJECT_ROOT / "data" / "Avatars"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

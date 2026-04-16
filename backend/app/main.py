@@ -8,6 +8,8 @@ import os
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.api.v1.endpoints import generation
+
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -19,6 +21,7 @@ app.include_router(practice.router, prefix="/api/v1/practice", tags=["practice"]
 app.include_router(quiz.router, prefix="/api/v1/quiz", tags=["quiz"])
 app.include_router(teacher.router, prefix="/api/v1/teacher", tags=["teacher"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
+app.include_router(generation.router, prefix="/api/v1/generation", tags=["generation"])
 
 origins = [
     "http://localhost:3000",
