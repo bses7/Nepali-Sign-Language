@@ -1,4 +1,5 @@
 import os
+import platform
 import yaml
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -51,7 +52,20 @@ class Settings(BaseSettings):
     
     @property
     def BLENDER_EXE(self) -> str:
-        return self.ml_config['blender']['executable_path']
+        """
+        Dynamically detects the Blender executable path.
+        Priority: 1. ENV Var, 2. OS Detection, 3. YAML config
+        """
+        env_path = os.getenv("BLENDER_PATH")
+        if env_path:
+            return env_path
+
+        current_os = platform.system()
+
+        if current_os == "Windows":
+            return self.ml_config['blender']['executable_path']
+        else:
+            return "blender"
 
     @property
     def BLENDER_SCRIPT(self) -> str:
@@ -64,9 +78,11 @@ class Settings(BaseSettings):
     @property
     def AVATARS_BASE_DIR(self) -> Path:
         return PROJECT_ROOT / "data" / "Avatars"
+    
+    @property
+    def STATIC_DIR(self) -> Path:
+        return PROJECT_ROOT / "backend" / "static"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-
-    model_config = SettingsConfigDict(env_file=".env")
 
 settings = Settings()

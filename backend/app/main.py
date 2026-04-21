@@ -4,9 +4,10 @@ from app.api.v1.endpoints import avatars, users
 from app.api.v1.endpoints import users, auth, lessons, practice, quiz, teacher, admin
 
 from fastapi.staticfiles import StaticFiles
-import os
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+
+from pathlib import Path
 
 import mimetypes
 
@@ -44,11 +45,13 @@ app.add_middleware(SessionMiddleware, secret_key="your-very-secret-key")
 def read_root():
     return {"message": f"Welcome to {settings.PROJECT_NAME}"}
 
-if not os.path.exists("static"):
-    os.makedirs("static")
-
-
 mimetypes.add_type('video/mp4', '.mp4')
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+base_path = Path(__file__).resolve().parent.parent 
+static_path = base_path / "static"
+
+static_path.mkdir(parents=True, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 

@@ -9,10 +9,12 @@ from app.models.user import User
 from app.models.lesson import SignContribution
 from app.services import user_service, notification_service
 
+from app.core.config import settings
+
 router = APIRouter()
 
-UPLOAD_DIR = "static/uploads/videos"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+upload_dir = settings.STATIC_DIR / "uploads" / "videos"
+upload_dir.mkdir(parents=True, exist_ok=True)
 
 @router.post("/upload-sign")
 async def upload_sign_video(
@@ -27,7 +29,7 @@ async def upload_sign_video(
 
     file_extension = video.filename.split(".")[-1]
     file_name = f"{uuid4()}.{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, file_name)
+    file_path = upload_dir / file_name
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(video.file, buffer)

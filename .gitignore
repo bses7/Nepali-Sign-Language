@@ -12,6 +12,6 @@ data
 *.ckpt
 
 backend/static/uploads/*
-
+backend/static/generated/*
 
 

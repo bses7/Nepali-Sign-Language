@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+venv/
+.vscode/
+.git/
+
+frontend/
+
+data/*
+!data/Avatars/
+
+# DO NOT copy training artifacts
+Notebook/
+mocap/
+
+# DO NOT copy existing generated files
+backend/static/generated/
+backend/static/uploads/

@@ -1,10 +1,10 @@
 import bpy
-import numpy as np
+import numpy as np # This will now be loaded from Blender's own environment
 import mathutils
 import math
 import sys
 import os
-
+import platform
 # ============================================
 # PARSE ARGUMENTS PASSED FROM MAIN.PY
 # ============================================
@@ -12,13 +12,17 @@ argv = sys.argv
 if "--" in argv:
     AVATAR_PATH = argv[argv.index("--") + 1]
 else:
-    AVATAR_PATH = "C:/projects/FYP/data/Avatars/avatar.glb"
+    if platform.system() == "Windows":
+        AVATAR_PATH = "C:/Projects/FYP/data/Avatars/avatar.glb"
+    else:
+        AVATAR_PATH = "/app/data/Avatars/avatar.glb"
 
 # ============================================
 # CONFIGURATION
 # ============================================
-NPZ_PATH = os.getenv("NPZ_PATH", "C:/projects/FYP/experiments/generated_output.npz")
-OUTPUT_GLB = os.getenv("OUTPUT_GLB", "C:/projects/FYP/experiments/nsl_animation.glb")
+NPZ_PATH = os.getenv("NPZ_PATH", "experiments/generated_output.npz")
+OUTPUT_GLB = os.getenv("OUTPUT_GLB", "experiments/nsl_animation.glb")
+
 FRAME_START = 1
 HAND_DATA_SCALE = 5.0 
 
